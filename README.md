@@ -7,10 +7,9 @@
 ```sh
 pip install -U git+https://github.com/leauferreira/GpX
 ```
-------
 
-##Citation
 
+## Citation
 
 If you use GPX, we would appreciate citation: 
 
