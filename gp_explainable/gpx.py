@@ -17,7 +17,8 @@ class Gpx:
                  num_samples=1000,
                  problem='classification',
                  gp_model=None,
-                 gp_hyper_parameters=None):
+                 gp_hyper_parameters=None,
+                 features_name=None):
         """
 
         :param predict: prediction function from black-box model. y_hat = predict(instance)
@@ -28,6 +29,7 @@ class Gpx:
         :param problem: type of problem (default = classification)
         :param gp_model: Genetic programming model (default provided by gplearn)
         :param gp_hyper_parameters: dictionary with hyper parameters of GP model
+        :param feature_names: list with all features Names
         """
         self.predict = predict
         self.x_train_measure = x_train_measure
@@ -35,6 +37,7 @@ class Gpx:
         self.y_train = y_train
         self.num_samples = num_samples
         self.problem = problem
+        self.feature_names = features_name
 
         if gp_model is None:
 
@@ -49,7 +52,8 @@ class Gpx:
                                             'p_point_mutation': 0.1,
                                             'const_range': (-100, 100),
                                             'parsimony_coefficient': 0.01,
-                                            'init_depth': (2, 3)}
+                                            'init_depth': (2, 3),
+                                            'feature_names': self.feature_names}
 
             else:
 
