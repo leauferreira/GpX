@@ -32,3 +32,4 @@ class Classification(Enum):
     wine = 11
     abalone = 12
     credit_g = 13  # cls, 2 class, 21 features
+    covid_19_minds = 14

@@ -38,9 +38,9 @@ class DataManager:
             self.np_y = self.pd_data[last_columns_names].values
             return self
 
-        def build_data(self, path):
+        def build_data(self, path, sep=','):
             resource_path = Path(__file__).parent / path
-            self.pd_data = pd.read_csv(resource_path)
+            self.pd_data = pd.read_csv(resource_path, sep=sep)
             return self
 
         def build(self):
@@ -142,6 +142,12 @@ def data_classification_factory(data_name):
             .build_np_y() \
             .build()
 
+    elif data_name == Classification.covid_19_minds:
+        dm = DataManager.BuilderData()\
+            .build_data('data/dataframe_limpo_oficial.csv', sep=';')  \
+            .build_np_x() \
+            .build_np_y() \
+            .build()
     else:
         raise ValueError('{} dataset not integrated'.format(data_name))
     return dm
