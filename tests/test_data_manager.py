@@ -16,11 +16,6 @@ class TestDataManager(unittest.TestCase):
         data = dm.get_all_regressions()
         self.assertEqual(len(data), 10)
 
-    def test_covid_19_minds(self):
-        data = dm.data_classification_factory(dm.Classification.covid_19_minds)
-        column_names = data.get_pd_data().columns
-        self.assertEqual('SARS-Cov-2 exam result', column_names[-1])
-
 
 if __name__ == '__main__':
     unittest.main()

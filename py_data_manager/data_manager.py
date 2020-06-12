@@ -142,12 +142,6 @@ def data_classification_factory(data_name):
             .build_np_y() \
             .build()
 
-    elif data_name == Classification.covid_19_minds:
-        dm = DataManager.BuilderData()\
-            .build_data('data/dataframe_limpo_oficial.csv', sep=';')  \
-            .build_np_x() \
-            .build_np_y() \
-            .build()
     else:
         raise ValueError('{} dataset not integrated'.format(data_name))
     return dm
