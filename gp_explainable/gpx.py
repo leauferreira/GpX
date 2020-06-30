@@ -31,6 +31,7 @@ class Gpx:
         :param gp_hyper_parameters: dictionary with hyper parameters of GP model
         :param feature_names: list with all features Names
         """
+        self.final_population = None
         self.predict = predict
         self.x_train_measure = x_train_measure
         self.x_train = x_train
@@ -69,6 +70,7 @@ class Gpx:
 
         if x_train_measure is None and x_train is not None:
             self.x_train_measure = np.std(x_train, axis=0) * .1
+
 
     def create_noise_set(self, instance):
 
@@ -109,12 +111,32 @@ class Gpx:
         return y_hat, x_around, y_around
 
     def make_graphviz_model(self):
+        """
+        Make a graphviz model of final tree structure
+
+        :return: graphviz model
+        """
 
         return pydotplus.graphviz.graph_from_dot_data(self.gp_model._program.export_graphviz())
 
+    def features_distribution(self):
 
+        self.final_population = self.gp_model._programs[-1]
 
+        if self.feature_names is None:
+            names = ['X' + str(i) for i in range(self.x_train.shape[1])]
+        else:
+            names = self.feature_names
 
+        distribution = {}
 
+        for name in names:
+            distribution[name] = 0
 
+        for program in self.final_population:
 
+            for name in names:
+                c = str(program).count(name)
+                distribution[name] += c
+
+        return distribution
