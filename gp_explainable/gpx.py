@@ -44,7 +44,7 @@ class Gpx:
 
             if gp_hyper_parameters is None:
 
-                self.gp_hyper_parameters = {'population_size': 300,
+                self.gp_hyper_parameters = {'population_size': 100,
                                             'generations': 100,
                                             'stopping_criteria': 0.00001,
                                             'p_crossover': 0.7,
@@ -54,7 +54,21 @@ class Gpx:
                                             'const_range': (-100, 100),
                                             'parsimony_coefficient': 0.01,
                                             'init_depth': (2, 3),
+                                            'random_state': 42,
+                                            'n_jobs': -1,
                                             'feature_names': self.feature_names}
+
+                # self.gp_hyper_parameters = {'population_size': 300,
+                #                             'generations': 100,
+                #                             'stopping_criteria': 0.00001,
+                #                             'p_crossover': 0.7,
+                #                             'p_subtree_mutation': 0.1,
+                #                             'p_hoist_mutation': 0.05,
+                #                             'p_point_mutation': 0.1,
+                #                             'const_range': (-100, 100),
+                #                             'parsimony_coefficient': 0.01,
+                #                             'init_depth': (2, 3),
+                #                             'feature_names': self.feature_names}
 
             else:
 
@@ -69,10 +83,15 @@ class Gpx:
                 self.gp_model = SymbolicRegressor(**self.gp_hyper_parameters)
 
         if x_train_measure is None and x_train is not None:
-            self.x_train_measure = np.std(x_train, axis=0) * .1
-
+            self.x_train_measure = np.std(x_train, axis=0) * .5
 
     def create_noise_set(self, instance):
+        """
+        Create a noise set around a instance that we want to explain
+
+        :param instance: numpy array with size equals to number of features in problem.
+        :return: x, y created around instance (y is predict by a black box model)
+        """
 
         d = len(instance)
         x_created = np.random.normal(instance, scale=self.x_train_measure, size=(self.num_samples, d))
@@ -102,9 +121,44 @@ class Gpx:
 
                 return x_created, y_created
 
+    def noise_set(self, instance):
+        """
+        Create a noise set around a instance that we want to explain
+
+        :param instance: numpy array with size equals to number of features in problem.
+        :return: x, y created around instance (y is predict by a black box model)
+        """
+
+        d = len(instance)
+        x_created = np.random.normal(instance, scale=self.x_train_measure, size=(self.num_samples, d))
+        y_created = self.predict(x_created)
+
+        if self.problem == 'regression':
+
+            return x_created, y_created
+
+        else:
+
+            y_min = np.min(y_created)
+            y_max = np.max(y_created)
+
+            if y_max != y_min:
+
+                return x_created, y_created
+
+            else:
+
+                for i, yt in enumerate(self.y_train):
+                    if yt != y_max:
+                        x_created[i, :] = self.x_train[i, :]
+                        y_created[i] = self.y_train[i]
+                        break
+
+                return x_created, y_created
+
     def explaining(self, instance):
 
-        x_around, y_around = self.create_noise_set(instance)
+        x_around, y_around = self.noise_set(instance)
         self.gp_model.fit(x_around, y_around)
         y_hat = self.gp_model.predict(instance.reshape(1, -1))
 
