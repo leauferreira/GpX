@@ -11,9 +11,9 @@ class Gpx:
 
     def __init__(self,
                  predict,
+                 x_train,
+                 y_train,
                  x_train_measure=None,
-                 x_train=None,
-                 y_train=None,
                  num_samples=1000,
                  problem='classification',
                  gp_model=None,
@@ -39,6 +39,8 @@ class Gpx:
         self.num_samples = num_samples
         self.problem = problem
         self.feature_names = features_name
+        self._x_around = None
+        self._y_around = None
 
         if gp_model is None:
 
@@ -51,24 +53,12 @@ class Gpx:
                                             'p_subtree_mutation': 0.1,
                                             'p_hoist_mutation': 0.05,
                                             'p_point_mutation': 0.1,
-                                            'const_range': (-100, 100),
+                                            'const_range': (-1, 1),
                                             'parsimony_coefficient': 0.01,
                                             'init_depth': (2, 3),
                                             'random_state': 42,
                                             'n_jobs': -1,
                                             'feature_names': self.feature_names}
-
-                # self.gp_hyper_parameters = {'population_size': 300,
-                #                             'generations': 100,
-                #                             'stopping_criteria': 0.00001,
-                #                             'p_crossover': 0.7,
-                #                             'p_subtree_mutation': 0.1,
-                #                             'p_hoist_mutation': 0.05,
-                #                             'p_point_mutation': 0.1,
-                #                             'const_range': (-100, 100),
-                #                             'parsimony_coefficient': 0.01,
-                #                             'init_depth': (2, 3),
-                #                             'feature_names': self.feature_names}
 
             else:
 
@@ -126,7 +116,7 @@ class Gpx:
         Create a noise set around a instance that we want to explain
 
         :param instance: numpy array with size equals to number of features in problem.
-        :return: x, y created around instance (y is predict by a black box model)
+        :return: x, y created around instance (y is predict by a black box model predict)
         """
 
         d = len(instance)
@@ -158,11 +148,11 @@ class Gpx:
 
     def explaining(self, instance):
 
-        x_around, y_around = self.noise_set(instance)
-        self.gp_model.fit(x_around, y_around)
+        self._x_around, self._y_around = self.noise_set(instance)
+        self.gp_model.fit(self._x_around, self._y_around)
         y_hat = self.gp_model.predict(instance.reshape(1, -1))
 
-        return y_hat, x_around, y_around
+        return y_hat, self._x_around, self._y_around
 
     def make_graphviz_model(self):
         """
@@ -174,6 +164,11 @@ class Gpx:
         return pydotplus.graphviz.graph_from_dot_data(self.gp_model._program.export_graphviz())
 
     def features_distribution(self):
+        """
+        Count all occurrence of every feature in the last population.
+
+        :return: dictionary with key = feature and value = total occurrence of that feature.
+        """
 
         self.final_population = self.gp_model._programs[-1]
 
@@ -194,3 +189,22 @@ class Gpx:
                 distribution[name] += c
 
         return distribution
+
+    def understand(self, instance=None, metric='accuracy'):
+
+        y_hat_gpx = None
+        y_hat_bb = None
+
+        if instance is None:
+            y_hat_gpx = self.gp_model.predict(self._x_around)
+            y_hat_bb = self._y_around
+        else:
+            x_around, y_around = self.noise_set(instance)
+            y_hat_gpx = self.gp_model.predict(x_around)
+            y_hat_bb = self.predict(x_around)
+
+        if metric == "accuracy":
+            if self.problem != "classification":
+                raise TypeError
+            return np.mean((y_hat_bb == y_hat_gpx)*1)
+
