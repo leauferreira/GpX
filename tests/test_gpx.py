@@ -2,7 +2,7 @@ import unittest
 
 from sklearn.neural_network import MLPClassifier
 
-from gp_explainable.gpx import Gpx
+from gp_explainer.gpx import Gpx
 from sklearn.datasets import make_moons
 
 x_varied, y_varied = make_moons(n_samples=500, random_state=170)

@@ -77,7 +77,7 @@ class Gpx:
 
     def create_noise_set(self, instance):
         """
-        Create a noise set around a instance that we want to explain
+        Create a noise set around a instance that will be explain
 
         :param instance: numpy array with size equals to number of features in problem.
         :return: x, y created around instance (y is predict by a black box model)
@@ -113,7 +113,7 @@ class Gpx:
 
     def noise_set(self, instance):
         """
-        Create a noise set around a instance that we want to explain
+        Create a noise set around a instance that will be explain
 
         :param instance: numpy array with size equals to number of features in problem.
         :return: x, y created around instance (y is predict by a black box model predict)
