@@ -8,6 +8,8 @@
 pip install -U git+https://github.com/leauferreira/GpX
 ```
 
+## Examples
+* You can find a colab example clicking [here](https://colab.research.google.com/drive/1rB8r1btvR2P2tfoXMaddlTiJ0upB7HhY?usp=sharing).
 
 ## Citation
 

@@ -22,7 +22,9 @@ class TestGPX(unittest.TestCase):
         y_hat_bb = my_predict(x_varied[13, :].reshape(1, -1))
 
         d = gpx.features_distribution()
-        acc = gpx.understand()
+        report = gpx.understand()
+
+        acc = report
 
         self.assertEqual(y_hat_gpx, y_hat_bb, "gpx fail in predict the black-box prediction")
 

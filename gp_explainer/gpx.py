@@ -1,6 +1,7 @@
 from gplearn.genetic import SymbolicRegressor, SymbolicClassifier
 import pydotplus as pydotplus
 import numpy as np
+from sklearn.metrics import classification_report
 
 
 class Gpx:
@@ -38,7 +39,7 @@ class Gpx:
         self.y_train = y_train
         self.num_samples = num_samples
         self.problem = problem
-        self.feature_names = features_name
+        self.features_names = features_name
         self._x_around = None
         self._y_around = None
 
@@ -58,7 +59,7 @@ class Gpx:
                                             'init_depth': (2, 3),
                                             'random_state': 42,
                                             'n_jobs': -1,
-                                            'feature_names': self.feature_names}
+                                            'feature_names': self.features_names}
 
             else:
 
@@ -73,7 +74,7 @@ class Gpx:
                 self.gp_model = SymbolicRegressor(**self.gp_hyper_parameters)
 
         if x_train_measure is None and x_train is not None:
-            self.x_train_measure = np.std(x_train, axis=0) * .5
+            self.x_train_measure = np.std(x_train, axis=0) * .2
 
     def create_noise_set(self, instance):
         """
@@ -165,17 +166,17 @@ class Gpx:
 
     def features_distribution(self):
         """
-        Count all occurrence of every feature in the last population.
+        Count all  feature occurrence in the last population.
 
-        :return: dictionary with key = feature and value = total occurrence of that feature.
+        :return: dictionary with key = feature and value = total occurrence of that feature in final population.
         """
 
         self.final_population = self.gp_model._programs[-1]
 
-        if self.feature_names is None:
+        if self.features_names is None:
             names = ['X' + str(i) for i in range(self.x_train.shape[1])]
         else:
-            names = self.feature_names
+            names = self.features_names
 
         distribution = {}
 
@@ -192,9 +193,6 @@ class Gpx:
 
     def understand(self, instance=None, metric='accuracy'):
 
-        y_hat_gpx = None
-        y_hat_bb = None
-
         if instance is None:
             y_hat_gpx = self.gp_model.predict(self._x_around)
             y_hat_bb = self._y_around
@@ -203,8 +201,10 @@ class Gpx:
             y_hat_gpx = self.gp_model.predict(x_around)
             y_hat_bb = self.predict(x_around)
 
-        if metric == "accuracy":
-            if self.problem != "classification":
-                raise TypeError
+        if self.problem == "classification":
+            d = classification_report(y_hat_bb, y_hat_gpx, output_dict=True)
+            d['accuracy'] = np.mean((y_hat_bb == y_hat_gpx)*1)
             return np.mean((y_hat_bb == y_hat_gpx)*1)
 
+        else:
+            return None
