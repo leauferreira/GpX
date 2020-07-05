@@ -1,7 +1,7 @@
 from gplearn.genetic import SymbolicRegressor, SymbolicClassifier
 import pydotplus as pydotplus
 import numpy as np
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, accuracy_score, f1_score, mean_squared_log_error, mean_squared_error
 
 
 class Gpx:
@@ -59,6 +59,9 @@ class Gpx:
                                             'init_depth': (2, 3),
                                             'random_state': 42,
                                             'n_jobs': -1,
+                                            'low_memory': True,
+                                            'function_set': ('add', 'sub', 'mul', 'div', 'sqrt', 'log', 'abs', 'neg',
+                                                             'inv', 'max', 'min', 'sin', 'cos', 'tan'),
                                             'feature_names': self.features_names}
 
             else:
@@ -168,7 +171,7 @@ class Gpx:
         """
         Count all  feature occurrence in the last population.
 
-        :return: dictionary with key = feature and value = total occurrence of that feature in final population.
+        :return: dictionary with key = feature and value = total occurrence of that feature in gp final population.
         """
 
         self.final_population = self.gp_model._programs[-1]
@@ -191,8 +194,9 @@ class Gpx:
 
         return distribution
 
-    def understand(self, instance=None, metric='accuracy'):
+    def understand(self, instance=None, metric='report'):
 
+        d = {}
         if instance is None:
             y_hat_gpx = self.gp_model.predict(self._x_around)
             y_hat_bb = self._y_around
@@ -202,9 +206,39 @@ class Gpx:
             y_hat_bb = self.predict(x_around)
 
         if self.problem == "classification":
-            d = classification_report(y_hat_bb, y_hat_gpx, output_dict=True)
-            d['accuracy'] = np.mean((y_hat_bb == y_hat_gpx)*1)
-            return np.mean((y_hat_bb == y_hat_gpx)*1)
+            d['accuracy'] = accuracy_score(y_hat_bb, y_hat_gpx)
+            d['f1'] = f1_score(y_hat_bb, y_hat_gpx, average='micro')
+
+            if metric == 'report':
+                d['accuracy'] = accuracy_score(y_hat_bb, y_hat_gpx)
+                d['f1'] = f1_score(y_hat_bb, y_hat_gpx, average='micro')
+                return d
+
+            elif metric == 'accuracy':
+                return accuracy_score(y_hat_bb, y_hat_gpx)
+
+            elif metric == 'f1':
+                return f1_score(y_hat_bb, y_hat_gpx, average='micro')
+
+            else:
+                raise ValueError('understand can not be used with {}'.format(metric))
+
+        elif self.problem == 'regression':
+
+            if metric == 'report':
+                d['msle'] = mean_squared_log_error(y_hat_bb, y_hat_gpx)
+                d['mse'] = mean_squared_error(y_hat_bb, y_hat_gpx)
+                return d
+
+            elif metric == "msle":
+                return mean_squared_log_error(y_hat_bb, y_hat_gpx)
+
+            elif metric == 'mse':
+                return mean_squared_error(y_hat_bb, y_hat_gpx)
+
+            else:
+                raise ValueError('understand can not be used with {}'.format(metric))
 
         else:
-            return None
+            raise ValueError('understand can not be used with problem type as {}'.format(metric))
+

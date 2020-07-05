@@ -22,7 +22,7 @@ class TestGPX(unittest.TestCase):
         y_hat_bb = my_predict(x_varied[13, :].reshape(1, -1))
 
         d = gpx.features_distribution()
-        report = gpx.understand()
+        report = gpx.understand(metric='accuracy')
 
         acc = report
 
