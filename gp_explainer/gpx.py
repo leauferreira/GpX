@@ -246,7 +246,6 @@ class Gpx:
         else:
             raise ValueError('understand can not be used with problem type as {}'.format(metric))
 
-
     def feature_sensitivity(self):
 
         mt = (np.min(self._x_around), np.max(self._x_around))
@@ -267,14 +266,15 @@ class Gpx:
 
                 if not header:
                     pg_str = str(self.gp_model._program)
-                    print("|{:^34}|".format(pg_str))
-                    print("|{:^10}|{:^7}|{:^15}|".format("FEATURE", "NOISE", "SENSITIVITY"))
+                    print("|{:^41}|".format(pg_str))
+                    print("|{:^10}|{:^10}|{:^20}|".format("FEATURE", "NOISE", "SENSITIVITY"))
                     header = True
 
                 for rate in rates:
-                    aux[p, :] = samples[p, :] * rate
+                    aux[:, p] = samples[:, p] * rate
                     y_true = self.gp_model.predict(samples)
                     y_eval = self.gp_model.predict(aux)
+                    aux = samples.copy()
 
                     sens = 1 - np.mean((y_true == y_eval) * 1)
 
