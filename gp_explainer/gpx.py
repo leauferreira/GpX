@@ -253,7 +253,7 @@ class Gpx:
         rates = np.linspace(mt[0], mt[1], 100)
         sz = self._x_around.shape[0]
         n_samples = sz // 10
-        idx = np.random.randint(n_samples, size=100)
+        idx = np.random.randint(sz, size=n_samples)
 
         samples = self._x_around[idx, :]
         aux = self._x_around[idx, :]
