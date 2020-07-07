@@ -1,7 +1,7 @@
 from gplearn.genetic import SymbolicRegressor, SymbolicClassifier
 import pydotplus as pydotplus
 import numpy as np
-from sklearn.metrics import classification_report, accuracy_score, f1_score, mean_squared_log_error, mean_squared_error
+from sklearn.metrics import accuracy_score, f1_score, mean_squared_log_error, mean_squared_error
 
 
 class Gpx:
@@ -42,6 +42,9 @@ class Gpx:
         self.features_names = features_name
         self._x_around = None
         self._y_around = None
+
+        if self.features_names is None:
+            self.features_names = ['x_' + str(i) for i in range(self.x_train.shape[1])]
 
         if gp_model is None:
 
@@ -176,25 +179,26 @@ class Gpx:
 
         self.final_population = self.gp_model._programs[-1]
 
-        if self.features_names is None:
-            names = ['X' + str(i) for i in range(self.x_train.shape[1])]
-        else:
-            names = self.features_names
-
         distribution = {}
 
-        for name in names:
+        for name in self.features_names:
             distribution[name] = 0
 
         for program in self.final_population:
 
-            for name in names:
+            for name in self.features_names:
                 c = str(program).count(name)
                 distribution[name] += c
 
         return distribution
 
     def understand(self, instance=None, metric='report'):
+        """
+
+        :param instance:
+        :param metric:
+        :return:
+        """
 
         d = {}
         if instance is None:
@@ -241,4 +245,44 @@ class Gpx:
 
         else:
             raise ValueError('understand can not be used with problem type as {}'.format(metric))
+
+
+    def feature_sensitivity(self):
+
+        mt = (np.min(self._x_around), np.max(self._x_around))
+        rates = np.linspace(mt[0], mt[1], 100)
+        sz = self._x_around.shape[0]
+        n_samples = sz // 10
+        idx = np.random.randint(n_samples, size=100)
+
+        samples = self._x_around[idx, :]
+        aux = self._x_around[idx, :]
+
+        header = False
+
+        program = self.gp_model._program
+        for i, p in enumerate(program.program):
+
+            if isinstance(p, int):
+
+                if not header:
+                    pg_str = str(self.gp_model._program)
+                    print("|{:^34}|".format(pg_str))
+                    print("|{:^10}|{:^7}|{:^15}|".format("FEATURE", "NOISE", "SENSITIVITY"))
+                    header = True
+
+                for rate in rates:
+                    aux[p, :] = samples[p, :] * rate
+                    y_true = self.gp_model.predict(samples)
+                    y_eval = self.gp_model.predict(aux)
+
+                    sens = 1 - np.mean((y_true == y_eval) * 1)
+
+                    if sens > 0:
+                        print("|{:^10.8}|{:^7.2f}|{:^15.2f}|".format(self.features_names[p],
+                                                                                rate, sens))
+
+
+
+
 
