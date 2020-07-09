@@ -145,16 +145,19 @@ class Gpx:
 
             else:
 
+                is_break = False
                 for i, yt in enumerate(self.y_train):
                     if yt != y_max:
                         x_created[i, :] = self.x_train[i, :]
                         y_created[i] = self.y_train[i]
+                        is_break = True
                         break
-                    else:
-                        g_max = np.max(self.y_train)
-                        g_min = np.min(self.y_train)
-                        idx = np.random.randint(x_created.shape[0])
-                        y_created[idx] = g_max if g_max != y_max else g_min
+
+                if not is_break:
+                    g_max = np.max(self.y_train)
+                    g_min = np.min(self.y_train)
+                    idx = np.random.randint(x_created.shape[0])
+                    y_created[idx] = g_max if g_max != y_max else g_min
 
                 return x_created, y_created
 
