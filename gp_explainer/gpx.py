@@ -1,6 +1,6 @@
-from gplearn.genetic import SymbolicRegressor, SymbolicClassifier
-import pydotplus as pydotplus
 import numpy as np
+import pydotplus as pydotplus
+from gplearn.genetic import SymbolicRegressor, SymbolicClassifier
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_log_error, mean_squared_error
 
 
@@ -150,6 +150,11 @@ class Gpx:
                         x_created[i, :] = self.x_train[i, :]
                         y_created[i] = self.y_train[i]
                         break
+                    else:
+                        g_max = np.max(self.y_train)
+                        g_min = np.min(self.y_train)
+                        idx = np.random.randint(x_created.shape[0])
+                        y_created[idx] = g_max if g_max != y_max else g_min
 
                 return x_created, y_created
 
@@ -279,7 +284,7 @@ class Gpx:
                     sens = 1 - np.mean((y_true == y_eval) * 1)
 
                     if sens > 0:
-                        print("|{:^10.8}|{:^7.2f}|{:^15.2f}|".format(self.features_names[p],
+                        print("|{:^10.8}|{:^10.2f}|{:^20.2f}|".format(self.features_names[p],
                                                                                 rate, sens))
 
 
