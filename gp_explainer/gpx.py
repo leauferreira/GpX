@@ -2,6 +2,7 @@ import numpy as np
 import pydotplus as pydotplus
 from gplearn.genetic import SymbolicRegressor, SymbolicClassifier
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_log_error, mean_squared_error
+from sklearn.preprocessing import StandardScaler
 
 
 class Gpx:
@@ -254,10 +255,22 @@ class Gpx:
         else:
             raise ValueError('understand can not be used with problem type as {}'.format(metric))
 
+    def max_min_matrix(self, noise_range=100):
+
+        v_min = np.min(self._x_around, axis=0)
+        v_max = np.max(self._x_around, axis=0)
+        rows, columns = self._x_around.shape
+        mmm = np.zeros(shape=(noise_range, columns))
+
+        for i, (min_, max_) in enumerate(zip(v_min, v_max)):
+            actual = np.linspace(min_, max_, noise_range)
+            mmm[:, i] = actual.ravel()
+
+        return mmm
+
     def feature_sensitivity(self):
 
-        mt = (np.min(self._x_around), np.max(self._x_around))
-        rates = np.linspace(mt[0], mt[1], 100)
+        mmm = self.max_min_matrix()
         sz = self._x_around.shape[0]
         n_samples = sz // 10
         idx = np.random.randint(sz, size=n_samples)
@@ -278,8 +291,8 @@ class Gpx:
                     print("|{:^10}|{:^10}|{:^20}|".format("FEATURE", "NOISE", "SENSITIVITY"))
                     header = True
 
-                for rate in rates:
-                    aux[:, p] = samples[:, p] * rate
+                for rate in mmm[:, p]:
+                    aux[:, p] = rate
                     y_true = self.gp_model.predict(samples)
                     y_eval = self.gp_model.predict(aux)
                     aux = samples.copy()
