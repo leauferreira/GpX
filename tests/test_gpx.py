@@ -50,5 +50,6 @@ class TestGPX(unittest.TestCase):
         self.assertGreater(acc, 0.9, 'Accuracy decreasing in understand()  method of GPX class!!')
 
 
+
 if __name__ == '__main__':
     unittest.main()

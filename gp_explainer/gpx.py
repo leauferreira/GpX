@@ -275,7 +275,7 @@ class Gpx:
 
         samples = self._x_around[idx, :]
 
-        header = False
+        header: bool = False
 
         feature_dict = {}
 
@@ -283,7 +283,7 @@ class Gpx:
 
             if isinstance(p, int):
 
-                # is_sensitive = False
+                is_sensitive: bool = False
 
                 if not header and verbose:
                     pg_str = str(self.gp_model._program)
@@ -306,11 +306,11 @@ class Gpx:
                     if sens > 0 and verbose:
                         print("|{:^10.8}|{:^10.2f}|{:^20.2f}|".format(self.features_names[p], rate, sens))
 
-                    # if sens > 0:
-                    np_sens[i] = sens
-                    #     is_sensitive = True
+                    if sens > 0:
+                        np_sens[i] = sens
+                        is_sensitive = True
 
-                if np.sum(np_sens) > 0:
+                if is_sensitive:
                     feature_dict[self.features_names[p]] = (mmm[:, p], np_sens)
 
         return feature_dict
