@@ -1,15 +1,12 @@
 import unittest
 
+import numpy as np
+
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 
 from gp_explainer.gpx import Gpx
 from sklearn.datasets import make_moons
-
-x_varied, y_varied = make_moons(n_samples=500, random_state=170)
-model = MLPClassifier()
-model.fit(x_varied, y_varied)
-my_predict = model.predict
 
 
 class TestGPX(unittest.TestCase):
@@ -24,11 +21,18 @@ class TestGPX(unittest.TestCase):
         gpx = Gpx(clf.predict, x_train=x, y_train=y, features_name=['x', 'y'])
         gpx.explaining(x_test[30, :])
 
-        print(gpx.gp_model._program)
+        d = gpx.feature_sensitivity()
 
-        gpx.feature_sensitivity()
+        sens = d['x'][0]
+
+        self.assertGreater(np.sum(sens), 1)
 
     def test_gpx_classify(self):
+
+        x_varied, y_varied = make_moons(n_samples=500, random_state=170)
+        model = MLPClassifier()
+        model.fit(x_varied, y_varied)
+        my_predict = model.predict
 
         gpx = Gpx(my_predict, x_train=x_varied, y_train=y_varied, num_samples=250)
 
@@ -38,10 +42,6 @@ class TestGPX(unittest.TestCase):
         d = gpx.features_distribution()
 
         acc = gpx.understand(metric='accuracy')
-
-        print(gpx.gp_model._program)
-
-        gpx.feature_sensitivity()
 
         self.assertEqual(y_hat_gpx, y_hat_bb, "gpx fail in predict the black-box prediction")
 

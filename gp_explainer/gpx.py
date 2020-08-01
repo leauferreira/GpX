@@ -2,7 +2,6 @@ import numpy as np
 import pydotplus as pydotplus
 from gplearn.genetic import SymbolicRegressor, SymbolicClassifier
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_log_error, mean_squared_error
-from sklearn.preprocessing import StandardScaler
 
 
 class Gpx:
@@ -31,7 +30,7 @@ class Gpx:
         :param problem: type of problem (default = classification)
         :param gp_model: Genetic programming model (default provided by gplearn)
         :param gp_hyper_parameters: dictionary with hyper parameters of GP model
-        :param feature_names: list with all features Names
+        :param features_name: list with all features Names
         """
         self.final_population = None
         self.predict = predict
@@ -268,7 +267,7 @@ class Gpx:
 
         return mmm
 
-    def feature_sensitivity(self):
+    def feature_sensitivity(self, verbose=False):
 
         mmm = self.max_min_matrix()
         sz = self._x_around.shape[0]
@@ -276,34 +275,46 @@ class Gpx:
         idx = np.random.randint(sz, size=n_samples)
 
         samples = self._x_around[idx, :]
-        aux = self._x_around[idx, :]
 
         header = False
 
-        program = self.gp_model._program
-        for i, p in enumerate(program.program):
+        feature_dict = {}
+
+        for p in self.gp_model._program.program:
 
             if isinstance(p, int):
 
-                if not header:
+                is_sensitive = False
+
+                if not header and verbose:
                     pg_str = str(self.gp_model._program)
                     print("|{:^41}|".format(pg_str))
                     print("|{:^10}|{:^10}|{:^20}|".format("FEATURE", "NOISE", "SENSITIVITY"))
                     header = True
 
-                for rate in mmm[:, p]:
+                aux = samples.copy()
+
+                np_sens = np.zeros(shape=100)
+
+                for i, rate in enumerate(mmm[:, p]):
+
                     aux[:, p] = rate
                     y_true = self.gp_model.predict(samples)
                     y_eval = self.gp_model.predict(aux)
-                    aux = samples.copy()
 
                     sens = 1 - np.mean((y_true == y_eval) * 1)
 
+                    if sens > 0 and verbose:
+                        print("|{:^10.8}|{:^10.2f}|{:^20.2f}|".format(self.features_names[p], rate, sens))
+
                     if sens > 0:
-                        print("|{:^10.8}|{:^10.2f}|{:^20.2f}|".format(self.features_names[p],
-                                                                                rate, sens))
+                        np_sens[i] = sens
+                        is_sensitive = True
 
+                if is_sensitive:
+                    feature_dict[self.features_names[p]] = (mmm[:, p], np_sens)
 
+        return feature_dict
 
 
 
