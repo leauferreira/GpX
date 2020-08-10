@@ -1,4 +1,5 @@
 import numpy as np
+import logging
 import pydotplus as pydotplus
 from gplearn.genetic import SymbolicRegressor, SymbolicClassifier
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_log_error, mean_squared_error
@@ -42,6 +43,11 @@ class Gpx:
         self.features_names = features_name
         self._x_around = None
         self._y_around = None
+
+        format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        logging.basicConfig(filename='gpx.log', level=logging.DEBUG,
+                            filemode='a+', format=format, datefmt='%d/%m/%Y %I:%M:%S %p')
+        self.logger = logging.getLogger(__name__)
 
         if self.features_names is None:
             self.features_names = ['x_' + str(i) for i in range(self.x_train.shape[1])]
@@ -248,9 +254,11 @@ class Gpx:
                 return mean_squared_error(y_hat_bb, y_hat_gpx)
 
             else:
+                self.logger.error('understand can not be used with {}'.format(metric))
                 raise ValueError('understand can not be used with {}'.format(metric))
 
         else:
+            self.logger.error('understand can not be used with problem type as {}'.format(metric))
             raise ValueError('understand can not be used with problem type as {}'.format(metric))
 
     def max_min_matrix(self, noise_range=100):
@@ -314,6 +322,3 @@ class Gpx:
                     feature_dict[self.features_names[p]] = (mmm[:, p], np_sens)
 
         return feature_dict
-
-
-
