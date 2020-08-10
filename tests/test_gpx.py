@@ -17,7 +17,7 @@ class TestGPX(unittest.TestCase):
         x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=.8, test_size=.2, random_state=17)
         clf.fit(x_train, y_train)
 
-        gpx = Gpx(clf.predict, x_train=x, y_train=y, features_name=['x', 'y'])
+        gpx = Gpx(clf.predict, x_train=x, y_train=y, feature_names=['x', 'y'])
         gpx.explaining(x_test[30, :])
 
         try:
@@ -25,8 +25,8 @@ class TestGPX(unittest.TestCase):
         except ValueError as e:
             gpx.logger.exception(e)
             u = gpx.understand(metric='accuracy')
+            gpx.logger.info('accuracy {}'.format(u))
             self.assertGreater(u, .9)
-
 
     def test_feature_sensitivity(self):
 
@@ -35,7 +35,7 @@ class TestGPX(unittest.TestCase):
         x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=.8, test_size=.2, random_state=17)
         clf.fit(x_train, y_train)
 
-        gpx = Gpx(clf.predict, x_train=x, y_train=y, features_name=['x', 'y'])
+        gpx = Gpx(clf.predict, x_train=x, y_train=y, feature_names=['x', 'y'])
         gpx.explaining(x_test[30, :])
 
         dict_sens = gpx.feature_sensitivity()
@@ -61,14 +61,13 @@ class TestGPX(unittest.TestCase):
 
         acc = gpx.understand(metric='accuracy')
 
-
         self.assertEqual(y_hat_gpx, y_hat_bb, "gpx fail in predict the black-box prediction")
-
-        gpx.logger.info('distribution: x_0: {} / x_1: {}'.format(d['x_0'], d['x_1']))
-        self.assertLess(d['x_0'], d['x_1'], 'Method features_distributions() output unexpected,  X1 greater than X0!')
 
         gpx.logger.info('test accuracy: {}'.format(acc))
         self.assertGreater(acc, 0.9, 'Accuracy decreasing in understand()  method of GPX class!!')
+
+        gpx.logger.info('distribution-> program:{} / x_0: {} / x_1: {}'.format(gpx.gp_model._program, d['x_0'], d['x_1']))
+        self.assertLess(d['x_0'], d['x_1'], 'Method features_distributions() output unexpected,  X1 greater than X0!')
 
 
 if __name__ == '__main__':

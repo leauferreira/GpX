@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 import pydotplus as pydotplus
-from gplearn.genetic import SymbolicRegressor, SymbolicClassifier
+from gplearn.genetic import SymbolicRegressor
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_log_error, mean_squared_error
 
 
@@ -20,7 +20,7 @@ class Gpx:
                  problem='classification',
                  gp_model=None,
                  gp_hyper_parameters=None,
-                 features_name=None):
+                 feature_names=None):
         """
 
         :param predict: prediction function from black-box model. y_hat = predict(instance)
@@ -31,7 +31,7 @@ class Gpx:
         :param problem: type of problem (default = classification)
         :param gp_model: Genetic programming model (default provided by gplearn)
         :param gp_hyper_parameters: dictionary with hyper parameters of GP model
-        :param features_name: list with all features Names
+        :param feature_names: list with all features Names
         """
         self.final_population = None
         self.predict = predict
@@ -40,52 +40,83 @@ class Gpx:
         self.y_train = y_train
         self.num_samples = num_samples
         self.problem = problem
-        self.features_names = features_name
+        self.feature_names = feature_names
         self._x_around = None
         self._y_around = None
+        self.gp_hyper_parameters = gp_hyper_parameters
+        self.gp_model = gp_model
 
         format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        logging.basicConfig(filename='gpx.log', level=logging.DEBUG,
+        logging.basicConfig(filename='..\gp_explainer\gpx.log', level=logging.DEBUG,
                             filemode='a+', format=format, datefmt='%d/%m/%Y %I:%M:%S %p')
         self.logger = logging.getLogger(__name__)
 
-        if self.features_names is None:
-            self.features_names = ['x_' + str(i) for i in range(self.x_train.shape[1])]
-
-        if gp_model is None:
-
-            if gp_hyper_parameters is None:
-
-                self.gp_hyper_parameters = {'population_size': 100,
-                                            'generations': 100,
-                                            'stopping_criteria': 0.00001,
-                                            'p_crossover': 0.7,
-                                            'p_subtree_mutation': 0.1,
-                                            'p_hoist_mutation': 0.05,
-                                            'p_point_mutation': 0.1,
-                                            'const_range': (-1, 1),
-                                            'parsimony_coefficient': 0.01,
-                                            'init_depth': (2, 3),
-                                            'random_state': 42,
-                                            'n_jobs': -1,
-                                            'low_memory': True,
-                                            'function_set': ('add', 'sub', 'mul', 'div', 'sqrt', 'log', 'abs', 'neg',
-                                                             'inv', 'max', 'min', 'sin', 'cos', 'tan'),
-                                            'feature_names': self.features_names}
-            else:
-
-                self.gp_hyper_parameters = gp_hyper_parameters
-
-            if problem == 'classification':
-
-                self.gp_model = SymbolicClassifier(**self.gp_hyper_parameters)
-
-            else:
-
-                self.gp_model = SymbolicRegressor(**self.gp_hyper_parameters)
-
         if x_train_measure is None and x_train is not None:
             self.x_train_measure = np.std(x_train, axis=0) * .2
+
+    def gp_prediction(self, x):
+        if self.problem == 'regression':
+            return self.gp_model.predict(x)
+        elif self.problem == 'classification':
+            y = self.gp_model.predict(x)
+            max = np.max(self.y_train)
+            min = np.min(self.y_train)
+            mean = (max + min)/2
+            for i, j in enumerate(y):
+                if j > mean:
+                    y[i] = max
+                else:
+                    y[i] = min
+            return y
+
+
+    @property
+    def gp_model(self):
+        return self._gp_model
+
+    @gp_model.setter
+    def gp_model(self, gp_model):
+        if gp_model is None:
+            self._gp_model = SymbolicRegressor(**self.gp_hyper_parameters)
+        else:
+            self._gp_model = gp_model
+
+    @property
+    def gp_hyper_parameters(self):
+        return self._gp_hyper_parameters
+
+    @gp_hyper_parameters.setter
+    def gp_hyper_parameters(self, gp_hyper_parameters):
+        if gp_hyper_parameters is None:
+            self._gp_hyper_parameters = {'population_size': 100,
+                                         'generations': 100,
+                                         'stopping_criteria': 0.00001,
+                                         'p_crossover': 0.7,
+                                         'p_subtree_mutation': 0.1,
+                                         'p_hoist_mutation': 0.05,
+                                         'p_point_mutation': 0.1,
+                                         'const_range': (-1, 1),
+                                         'parsimony_coefficient': 0.01,
+                                         'init_depth': (2, 3),
+                                         'random_state': 42,
+                                         'n_jobs': -1,
+                                         'low_memory': True,
+                                         'function_set': ('add', 'sub', 'mul', 'div', 'sqrt', 'log', 'abs', 'neg',
+                                                          'inv', 'max', 'min', 'sin', 'cos', 'tan'),
+                                         'feature_names': self.feature_names}
+        else:
+            self._gp_hyper_parameters = gp_hyper_parameters
+
+    @property
+    def feature_names(self):
+        return self._feature_names
+
+    @feature_names.setter
+    def feature_names(self, feature_names):
+        if feature_names is None:
+            self._feature_names = list('x_' + str(i) for i in range(self.x_train.shape[1]))
+        else:
+            self._feature_names = feature_names
 
     def create_noise_set(self, instance):
         """
@@ -135,42 +166,13 @@ class Gpx:
         x_created = np.random.normal(instance, scale=self.x_train_measure, size=(self.num_samples, d))
         y_created = self.predict(x_created)
 
-        if self.problem == 'regression':
-
-            return x_created, y_created
-
-        else:
-
-            y_min = np.min(y_created)
-            y_max = np.max(y_created)
-
-            if y_max != y_min:
-
-                return x_created, y_created
-
-            else:
-
-                is_break = False
-                for i, yt in enumerate(self.y_train):
-                    if yt != y_max:
-                        x_created[i, :] = self.x_train[i, :]
-                        y_created[i] = self.y_train[i]
-                        is_break = True
-                        break
-
-                if not is_break:
-                    g_max = np.max(self.y_train)
-                    g_min = np.min(self.y_train)
-                    idx = np.random.randint(x_created.shape[0])
-                    y_created[idx] = g_max if g_max != y_max else g_min
-
-                return x_created, y_created
+        return x_created, y_created
 
     def explaining(self, instance):
 
         self._x_around, self._y_around = self.noise_set(instance)
         self.gp_model.fit(self._x_around, self._y_around)
-        y_hat = self.gp_model.predict(instance.reshape(1, -1))
+        y_hat = self.gp_prediction(instance.reshape(1, -1))
 
         return y_hat, self._x_around, self._y_around
 
@@ -194,12 +196,12 @@ class Gpx:
 
         distribution = {}
 
-        for name in self.features_names:
+        for name in self.feature_names:
             distribution[name] = 0
 
         for program in self.final_population:
 
-            for name in self.features_names:
+            for name in self.feature_names:
                 c = str(program).count(name)
                 distribution[name] += c
 
@@ -215,11 +217,11 @@ class Gpx:
 
         d = {}
         if instance is None:
-            y_hat_gpx = self.gp_model.predict(self._x_around)
+            y_hat_gpx = self.gp_prediction(self._x_around)
             y_hat_bb = self._y_around
         else:
             x_around, y_around = self.noise_set(instance)
-            y_hat_gpx = self.gp_model.predict(x_around)
+            y_hat_gpx = self.gp_prediction(x_around)
             y_hat_bb = self.predict(x_around)
 
         if self.problem == "classification":
@@ -306,8 +308,8 @@ class Gpx:
                 for i, rate in enumerate(mmm[:, p]):
 
                     aux[:, p] = rate
-                    y_true = self.gp_model.predict(samples)
-                    y_eval = self.gp_model.predict(aux)
+                    y_true = self.gp_prediction(samples)
+                    y_eval = self.gp_prediction(aux)
 
                     sens = 1 - np.mean((y_true == y_eval) * 1)
 
@@ -322,3 +324,7 @@ class Gpx:
                     feature_dict[self.features_names[p]] = (mmm[:, p], np_sens)
 
         return feature_dict
+
+
+
+
