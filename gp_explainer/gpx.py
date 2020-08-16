@@ -1,5 +1,6 @@
 import numpy as np
 import logging
+from pathlib import Path
 import pydotplus as pydotplus
 from gplearn.genetic import SymbolicRegressor
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_log_error, mean_squared_error
@@ -20,7 +21,8 @@ class Gpx:
                  problem='classification',
                  gp_model=None,
                  gp_hyper_parameters=None,
-                 feature_names=None):
+                 feature_names=None,
+                 random_state=None):
         """
 
         :param predict: prediction function from black-box model. y_hat = predict(instance)
@@ -35,40 +37,51 @@ class Gpx:
         """
         self.final_population = None
         self.predict = predict
-        self.x_train_measure = x_train_measure
         self.x_train = x_train
         self.y_train = y_train
+        self.x_train_measure = x_train_measure
         self.num_samples = num_samples
         self.problem = problem
         self.feature_names = feature_names
-        self._x_around = None
-        self._y_around = None
+        self.x_around = None
+        self.y_around = None
+        self.random_state = random_state
         self.gp_hyper_parameters = gp_hyper_parameters
         self.gp_model = gp_model
 
         format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        logging.basicConfig(filename='..\gp_explainer\gpx.log', level=logging.DEBUG,
-                            filemode='a+', format=format, datefmt='%d/%m/%Y %I:%M:%S %p')
+        resource_path = Path(__file__).parent / 'gpx.log'
+        logging.basicConfig(filename=resource_path, level=logging.DEBUG,
+                            filemode='w', format=format, datefmt='%d/%m/%Y %I:%M:%S %p')
         self.logger = logging.getLogger(__name__)
 
-        if x_train_measure is None and x_train is not None:
-            self.x_train_measure = np.std(x_train, axis=0) * .2
+    def gp_fit(self):
+
+        if self.x_around is not None or self.y_around is not None:
+
+            if self.problem == 'regression':
+                self.gp_model.fit(self.x_around, self.y_around)
+
+            if self.problem == 'classification':
+                self._gp_model.fit(self.x_around, self.y_around[:, 0].reshape(-1))
+        else:
+            raise ValueError("x_arond and y_around must be created")
 
     def gp_prediction(self, x):
+
         if self.problem == 'regression':
+
             return self.gp_model.predict(x)
+
         elif self.problem == 'classification':
-            y = self.gp_model.predict(x)
+
+            y_proba = self.gp_model.predict(x)
             max = np.max(self.y_train)
             min = np.min(self.y_train)
-            mean = (max + min)/2
-            for i, j in enumerate(y):
-                if j > mean:
-                    y[i] = max
-                else:
-                    y[i] = min
-            return y
 
+            y = tuple(max if x <= .5 else min for x in y_proba)
+
+            return np.array(y)
 
     @property
     def gp_model(self):
@@ -76,10 +89,26 @@ class Gpx:
 
     @gp_model.setter
     def gp_model(self, gp_model):
+
         if gp_model is None:
+
             self._gp_model = SymbolicRegressor(**self.gp_hyper_parameters)
+
         else:
+
             self._gp_model = gp_model
+
+    @property
+    def x_train_measure(self):
+        return self._x_train_measure
+
+    @x_train_measure.setter
+    def x_train_measure(self, x_train_measure):
+        if x_train_measure is None and self.x_train is not None:
+            self._x_train_measure = np.std(self.x_train, axis=0) * .2
+        else:
+            self._x_train_measure = x_train_measure
+
 
     @property
     def gp_hyper_parameters(self):
@@ -98,11 +127,12 @@ class Gpx:
                                          'const_range': (-1, 1),
                                          'parsimony_coefficient': 0.01,
                                          'init_depth': (2, 3),
-                                         'random_state': 42,
                                          'n_jobs': -1,
+                                         'random_state': self.random_state,
                                          'low_memory': True,
-                                         'function_set': ('add', 'sub', 'mul', 'div', 'sqrt', 'log', 'abs', 'neg',
-                                                          'inv', 'max', 'min', 'sin', 'cos', 'tan'),
+                                         'function_set': ('add', 'sub', 'mul', 'div', 'sqrt', 'log',
+                                                          'abs', 'neg', 'inv', 'max', 'min', 'sin',
+                                                          'cos', 'tan'),
                                          'feature_names': self.feature_names}
         else:
             self._gp_hyper_parameters = gp_hyper_parameters
@@ -170,11 +200,11 @@ class Gpx:
 
     def explaining(self, instance):
 
-        self._x_around, self._y_around = self.noise_set(instance)
-        self.gp_model.fit(self._x_around, self._y_around)
+        self.x_around, self.y_around = self.noise_set(instance)
+        self.gp_fit()
         y_hat = self.gp_prediction(instance.reshape(1, -1))
 
-        return y_hat, self._x_around, self._y_around
+        return y_hat
 
     def make_graphviz_model(self):
         """
@@ -207,6 +237,15 @@ class Gpx:
 
         return distribution
 
+    def proba_transform(self, y_proba):
+
+        max = np.max(self.y_train)
+        min = np.min(self.y_train)
+
+        y = tuple(max if x <= .5 else min for x in y_proba[:, 0])
+
+        return np.array(y)
+
     def understand(self, instance=None, metric='report'):
         """
 
@@ -217,16 +256,14 @@ class Gpx:
 
         d = {}
         if instance is None:
-            y_hat_gpx = self.gp_prediction(self._x_around)
-            y_hat_bb = self._y_around
+            y_hat_gpx = self.gp_prediction(self.x_around)
+            y_hat_bb = self.proba_transform(self.y_around)
         else:
             x_around, y_around = self.noise_set(instance)
             y_hat_gpx = self.gp_prediction(x_around)
-            y_hat_bb = self.predict(x_around)
+            y_hat_bb = self.proba_transform(self.predict(x_around))
 
         if self.problem == "classification":
-            d['accuracy'] = accuracy_score(y_hat_bb, y_hat_gpx)
-            d['f1'] = f1_score(y_hat_bb, y_hat_gpx, average='micro')
 
             if metric == 'report':
                 d['accuracy'] = accuracy_score(y_hat_bb, y_hat_gpx)
@@ -265,9 +302,9 @@ class Gpx:
 
     def max_min_matrix(self, noise_range=100):
 
-        v_min = np.min(self._x_around, axis=0)
-        v_max = np.max(self._x_around, axis=0)
-        rows, columns = self._x_around.shape
+        v_min = np.min(self.x_around, axis=0)
+        v_max = np.max(self.x_around, axis=0)
+        rows, columns = self.x_around.shape
         mmm = np.zeros(shape=(noise_range, columns))
 
         for i, (min_, max_) in enumerate(zip(v_min, v_max)):
@@ -279,11 +316,11 @@ class Gpx:
     def feature_sensitivity(self, verbose=False):
 
         mmm = self.max_min_matrix()
-        sz = self._x_around.shape[0]
+        sz = self.x_around.shape[0]
         n_samples = sz // 10
         idx = np.random.randint(sz, size=n_samples)
 
-        samples = self._x_around[idx, :]
+        samples = self.x_around[idx, :]
 
         header: bool = False
 
@@ -324,7 +361,5 @@ class Gpx:
                     feature_dict[self.features_names[p]] = (mmm[:, p], np_sens)
 
         return feature_dict
-
-
 
 
