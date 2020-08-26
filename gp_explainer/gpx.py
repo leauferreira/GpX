@@ -257,13 +257,15 @@ class Gpx:
         d = {}
         if instance is None:
             y_hat_gpx = self.gp_prediction(self.x_around)
-            y_hat_bb = self.proba_transform(self.y_around)
+            y_hat_bb = self.y_around
         else:
             x_around, y_around = self.noise_set(instance)
-            y_hat_gpx = self.gp_prediction(x_around)
+            y_hat_gpx = x_around
             y_hat_bb = self.proba_transform(self.predict(x_around))
 
         if self.problem == "classification":
+
+            y_hat_bb = self.proba_transform(self.y_around)
 
             if metric == 'report':
                 d['accuracy'] = accuracy_score(y_hat_bb, y_hat_gpx)
@@ -358,7 +360,7 @@ class Gpx:
                         is_sensitive = True
 
                 if is_sensitive:
-                    feature_dict[self.features_names[p]] = (mmm[:, p], np_sens)
+                    feature_dict[self.feature_names[p]] = (mmm[:, p], np_sens)
 
         return feature_dict
 

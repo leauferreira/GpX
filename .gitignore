@@ -132,3 +132,7 @@ dmypy.json
 
 # PyCharm stuff
 .idea
+
+# gpx stuff
+*.gif
+

@@ -3,3 +3,4 @@ scikit-learn~=0.23.1
 setuptools~=46.4.0
 pydotplus~=2.0.2
 gplearn~=0.4.1
+matplotlib~=3.2.1
