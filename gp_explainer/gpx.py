@@ -136,8 +136,7 @@ class Gpx:
                                          'feature_names': self.feature_names}
         else:
             self._gp_hyper_parameters = gp_hyper_parameters
-            self.feature_names = gp_hyper_parameters['feature_names']
-
+            self.feature_names = gp_hyper_parameters.get('feature_names')
 
     @property
     def feature_names(self):
