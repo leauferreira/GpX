@@ -42,11 +42,11 @@ class Gpx:
         self.x_train_measure = x_train_measure
         self.num_samples = num_samples
         self.problem = problem
+        self.random_state = random_state
+        self.gp_hyper_parameters = gp_hyper_parameters
         self.feature_names = feature_names
         self.x_around = None
         self.y_around = None
-        self.random_state = random_state
-        self.gp_hyper_parameters = gp_hyper_parameters
         self.gp_model = gp_model
 
         format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -91,7 +91,9 @@ class Gpx:
     def gp_model(self, gp_model):
 
         if gp_model is None:
-
+            f_names = self.gp_hyper_parameters.get('feature_names')
+            if f_names is None:
+                self.gp_hyper_parameters['feature_names'] = self.feature_names
             self._gp_model = SymbolicRegressor(**self.gp_hyper_parameters)
 
         else:
@@ -132,11 +134,9 @@ class Gpx:
                                          'low_memory': True,
                                          'function_set': ('add', 'sub', 'mul', 'div', 'sqrt', 'log',
                                                           'abs', 'neg', 'inv', 'max', 'min', 'sin',
-                                                          'cos', 'tan'),
-                                         'feature_names': self.feature_names}
+                                                          'cos', 'tan')}
         else:
             self._gp_hyper_parameters = gp_hyper_parameters
-            self.feature_names = gp_hyper_parameters.get('feature_names')
 
     @property
     def feature_names(self):
@@ -144,10 +144,14 @@ class Gpx:
 
     @feature_names.setter
     def feature_names(self, feature_names):
+
         if feature_names is None:
-            self._feature_names = list('x_' + str(i) for i in range(self.x_train.shape[1]))
+            self._feature_names = self.gp_hyper_parameters.get('feature_names')
         else:
             self._feature_names = feature_names
+
+        if self._feature_names is None:
+            self._feature_names = list('x_' + str(i) for i in range(self.x_train.shape[1]))
 
     def create_noise_set(self, instance):
         """

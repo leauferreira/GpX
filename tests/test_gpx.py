@@ -4,8 +4,8 @@ import numpy as np
 
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.datasets import load_boston
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+from sklearn.datasets import load_boston, load_breast_cancer
 from sklearn.metrics import mean_squared_error
 
 from gp_explainer.gpx import Gpx
@@ -16,6 +16,37 @@ import matplotlib.animation as ani
 
 
 class TestGPX(unittest.TestCase):
+
+    def test_feature_names(self):
+        X, y = load_breast_cancer(return_X_y=True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33)
+
+        f_names = load_breast_cancer().feature_names
+
+        model = RandomForestClassifier()
+        model.fit(X_train, y_train)
+
+        gp_hyper_parameters = {'population_size': 200,
+                               'generations': 200,
+                               'stopping_criteria': 0.0001,
+                               'p_crossover': 0.7,
+                               'p_subtree_mutation': 0.1,
+                               'p_hoist_mutation': 0.05,
+                               'p_point_mutation': 0.1,
+                               'const_range': (-1, 1),
+                               'parsimony_coefficient': 0.0005,
+                               'init_depth': (3, 6),
+                               'n_jobs': -1,
+                               'function_set': ('add', 'sub', 'mul', 'div', 'sqrt', 'log',
+                                                'abs', 'neg', 'inv', 'max', 'min', 'sin',
+                                                'cos', 'tan'),
+                               'feature_names': f_names}
+
+        gpx = Gpx(model.predict_proba, x_train=X_train, y_train=y_train, random_state=42,
+                  gp_hyper_parameters=gp_hyper_parameters)
+        gpx.explaining(X_test[30, :])
+
+        print(gpx.gp_model._program)
 
     def test_grafic_sensibility(self):
         INSTANCE: int = 74
