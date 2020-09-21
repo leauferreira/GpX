@@ -2,6 +2,7 @@ import numpy as np
 import logging
 from pathlib import Path
 import pydotplus as pydotplus
+from scipy.spatial import distance
 from gplearn.genetic import SymbolicRegressor
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_log_error, mean_squared_error
 
@@ -34,6 +35,7 @@ class Gpx:
         :param gp_model: Genetic programming model (default provided by gplearn)
         :param gp_hyper_parameters: dictionary with hyper parameters of GP model
         :param feature_names: list with all features Names
+        :param labels: unique label of each class
         """
         self.final_population = None
         self.predict = predict
@@ -48,6 +50,7 @@ class Gpx:
         self.x_around = None
         self.y_around = None
         self.gp_model = gp_model
+        self.labels = set(self.y_train)
 
         format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         resource_path = Path(__file__).parent / 'gpx.log'
@@ -203,13 +206,26 @@ class Gpx:
 
         return x_created, y_created
 
+    def noise_k_neighbor(self, instance, k):
+
+        each_class = {label: self.x_train[self.y_train == label, :] for label in self.labels}
+        each_distance = {label: distance.cdist(my_class, instance.reshape(1, -1))
+                         for label, my_class in each_class.items()}
+        k_distance = {label: np.argsort(dist_class, axis=0)[:k] for label, dist_class in each_distance.items()}
+        k_neighbor = {label: each_class[label][idx][:, 0] for label, idx in k_distance.items()}
+
+        noise_set = np.concatenate(tuple(k_neighbor.values()), axis=0)
+
+        return k_neighbor, k_distance, each_distance, each_class, self.max_min_matrix(noise_set,
+                                                                                      noise_range=self.num_samples,
+                                                                                      dist_type='uniform')
+
     def explaining(self, instance):
 
         self.x_around, self.y_around = self.noise_set(instance)
         self.gp_fit()
-        y_hat = self.gp_prediction(instance.reshape(1, -1))
 
-        return y_hat
+        return self.gp_prediction(instance.reshape(1, -1))
 
     def make_graphviz_model(self):
         """
@@ -307,15 +323,29 @@ class Gpx:
             self.logger.error('understand can not be used with problem type as {}'.format(metric))
             raise ValueError('understand can not be used with problem type as {}'.format(metric))
 
-    def max_min_matrix(self, noise_range=100):
+    def max_min_matrix(self, noise_set=None, dist_type='upward', noise_range=100):
 
-        v_min = np.min(self.x_around, axis=0)
-        v_max = np.max(self.x_around, axis=0)
-        rows, columns = self.x_around.shape
-        mmm = np.zeros(shape=(noise_range, columns))
+        if noise_set is None:
+
+            v_min = np.min(self.x_around, axis=0)
+            v_max = np.max(self.x_around, axis=0)
+            rows, columns = self.x_around.shape
+            mmm = np.zeros(shape=(noise_range, columns))
+
+        else:
+
+            v_min = np.min(noise_set, axis=0)
+            v_max = np.max(noise_set, axis=0)
+            rows, columns = noise_set.shape
+            mmm = np.zeros(shape=(noise_range, columns))
+
+        if dist_type == 'upward':
+            f_dist = np.linspace
+        elif dist_type == 'uniform':
+            f_dist = np.random.uniform
 
         for i, (min_, max_) in enumerate(zip(v_min, v_max)):
-            actual = np.linspace(min_, max_, noise_range)
+            actual = f_dist(min_, max_, noise_range)
             mmm[:, i] = actual.ravel()
 
         return mmm

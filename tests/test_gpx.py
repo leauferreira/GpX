@@ -1,6 +1,7 @@
 import unittest
 
 import numpy as np
+from matplotlib.pyplot import plot
 
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
@@ -15,7 +16,70 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as ani
 
 
+
 class TestGPX(unittest.TestCase):
+
+    def test_noise_k_neighbor(self):
+
+        INSTANCE: int = 74
+        x, y = make_moons(n_samples=500, noise=.1)
+        clf = RandomForestClassifier()
+        x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=.8, test_size=.2)
+        clf.fit(x_train, y_train)
+
+        gpx = Gpx(clf.predict_proba, x_train=x_train, y_train=y_train, feature_names=['x', 'y'], num_samples=1000)
+        gpx.explaining(x_test[INSTANCE, :])
+
+        k_neighbor, k_distance, each_distance, each_class, ns = gpx.noise_k_neighbor(x_test[INSTANCE, :], 4)
+
+        # print(each_distance)
+
+        # idx = np.where(each_distance[0] == np.min(each_distance[0], axis=0))
+        # print(idx)
+        #
+        # print(k_distance[0])
+
+        # print(each_class[0][k_distance[0]])
+        # print(k_neighbor[0])
+
+        # print(each_class)
+        #
+        # plt.figure(figsize=(6, 4))
+        # plt.scatter(each_class[0][:, 0], each_class[0][:, 1],  cmap='viridis')
+        # plt.scatter(each_class[1][:, 0], each_class[1][:, 1],  cmap='hot')
+        # plt.grid(True)
+        #
+        # plt.figure(figsize=(6, 4))
+        # plt.scatter(x_train[:, 0], x_train[:, 1], c=y_train,  cmap='viridis')
+        # plt.grid(True)
+        # plt.show()
+
+        # print(x_train[-4:, :])
+        #
+        x_train = np.append(x_train, ns, axis=0)
+        y_train = np.append(y_train, clf.predict(ns))
+        x_train = np.append(x_train, k_neighbor[0], axis=0)
+        x_train = np.append(x_train, k_neighbor[1], axis=0)
+        x_train = np.append(x_train, x_test[INSTANCE, :].reshape(1, -1), axis=0)
+
+        # print(x_train[-4:, :])
+
+        a = x_train[:, 0]
+        b = x_train[:, 1]
+        c = y_train
+
+        c = np.append(c, [2, 2, 2, 2, 3, 3, 3, 3, 4])
+        c1 = np.ma.masked_where(c > 1, np.ones(len(c))*20)
+        c2 = np.ma.masked_where(c < 2, np.ones(len(c))*200)
+        c3 = np.ma.masked_where(c < 4, np.ones(len(c))*300)
+
+        plt.figure(figsize=(6, 4))
+        plt.scatter(a, b, c=c, s=c1, cmap='viridis', label='data')
+        plt.scatter(a, b, c=c, s=c2, marker='^', cmap='hot', label='k-neighbor')
+        plt.scatter(a, b, c=c, s=c3, marker='X', cmap='hsv', label='instance')
+        plt.grid(True)
+        plt.legend()
+        plt.show()
 
     def test_feature_names(self):
         X, y = load_breast_cancer(return_X_y=True)
