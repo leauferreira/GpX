@@ -1,23 +1,121 @@
 import unittest
 
 import numpy as np
-from matplotlib.pyplot import plot
 
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.datasets import load_boston, load_breast_cancer
-from sklearn.metrics import mean_squared_error
+from sklearn.datasets import load_boston, make_moons, load_breast_cancer, load_iris, load_wine
+from sklearn.metrics import mean_squared_error, accuracy_score
+from sklearn.preprocessing import Normalizer
 
 from gp_explainer.gpx import Gpx
-from sklearn.datasets import make_moons
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as ani
 
 
-
 class TestGPX(unittest.TestCase):
+
+    def test_multi_class_wine(self):
+
+        INSTANCE: int = 17
+        iris = load_wine()
+        X, y = load_wine(return_X_y=True)
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.3)
+
+        scaler = Normalizer()
+        scaler.fit(X_train)
+        X_train = scaler.transform(X_train)
+
+        clf = RandomForestClassifier()
+        clf.fit(X_train, y_train)
+
+        gp_hyper_parameters = {'population_size': 50,
+                               'generations': 50,
+                               'stopping_criteria': 0.0001,
+                               'p_crossover': 0.7,
+                               'p_subtree_mutation': 0.1,
+                               'p_hoist_mutation': 0.05,
+                               'p_point_mutation': 0.1,
+                               'const_range': (-1, 1),
+                               'parsimony_coefficient': 0.0005,
+                               'init_depth': (3, 6),
+                               'n_jobs': -1,
+                               'function_set': ('add', 'sub', 'mul', 'div', 'sqrt', 'log',
+                                                'abs', 'neg', 'inv', 'max', 'min', 'sin',
+                                                'cos', 'tan')
+                               }
+
+        gpx = Gpx(clf.predict_proba,
+                  gp_hyper_parameters=gp_hyper_parameters,
+                  x_train=X_train,
+                  y_train=y_train,
+                  feature_names=iris.feature_names,
+                  num_samples=700,
+                  k_neighbor=10)
+
+        y_hat = gpx.explaining(scaler.transform(X_test[INSTANCE, :].reshape(-1, 1)))
+
+        x_around = gpx.x_around
+
+        gpx_y = gpx.gp_prediction(x_around)
+        bb_y = clf.predict(x_around)
+
+        gpx.logger.info('Multiclass: gpx_understand {}'.format(gpx.understand(metric='accuracy')))
+        gpx.logger.info('Multiclass gpx_y:{} / bb_y {}'.format(gpx_y, bb_y))
+        gpx.logger.info('test_understand mult-class accuracy {}'.format(accuracy_score(gpx_y, bb_y)))
+
+    def test_multi_class(self):
+
+        INSTANCE: int = 20
+        iris = load_iris()
+        X, y = load_iris(return_X_y=True)
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.3, random_state=42)
+
+        scaler = Normalizer()
+        scaler.fit(X_train)
+        X_train = scaler.transform(X_train)
+
+        clf = RandomForestClassifier(random_state=42)
+        clf.fit(X_train, y_train)
+
+        gp_hyper_parameters = {'population_size': 100,
+                               'generations': 100,
+                               'stopping_criteria': 0.0001,
+                               'p_crossover': 0.7,
+                               'p_subtree_mutation': 0.1,
+                               'p_hoist_mutation': 0.05,
+                               'p_point_mutation': 0.1,
+                               'const_range': (-1, 1),
+                               'parsimony_coefficient': 0.0005,
+                               'init_depth': (3, 6),
+                               'n_jobs': -1,
+                               'random_state': 42,
+                               'function_set': ('add', 'sub', 'mul', 'div', 'sqrt', 'log',
+                                                'abs', 'neg', 'inv', 'max', 'min', 'sin',
+                                                'cos', 'tan')
+                               }
+
+        gpx = Gpx(clf.predict_proba,
+                  gp_hyper_parameters=gp_hyper_parameters,
+                  x_train=X_train,
+                  y_train=y_train,
+                  feature_names=iris.feature_names,
+                  num_samples=500,
+                  k_neighbor=50)
+
+        y_hat = gpx.explaining(scaler.transform(X_test[INSTANCE, :].reshape(-1, 1)))
+
+        x_around = gpx.x_around
+
+        gpx_y = gpx.gp_prediction(x_around)
+        bb_y = clf.predict(x_around)
+
+        gpx.logger.info('Multiclass gpx_y:{} / bb_y {}'.format(gpx_y, bb_y))
+        gpx.logger.info('test_understand mult-class accuracy {}'.format(accuracy_score(gpx_y, bb_y)))
 
     def test_noise_k_neighbor(self):
 
@@ -30,7 +128,7 @@ class TestGPX(unittest.TestCase):
         gpx = Gpx(clf.predict_proba, x_train=x_train, y_train=y_train, feature_names=['x', 'y'], num_samples=1000)
         gpx.explaining(x_test[INSTANCE, :])
 
-        k_neighbor, k_distance, each_distance, each_class, ns = gpx.noise_k_neighbor(x_test[INSTANCE, :], 4)
+        ns, y_created, k_neighbor, k_distance, each_distance, each_class = gpx.noise_k_neighbor(x_test[INSTANCE, :], 4)
 
         # print(each_distance)
 
@@ -163,6 +261,9 @@ class TestGPX(unittest.TestCase):
         print(sens_gpx)
 
     def test_gpx_regression(self):
+        """
+        stochastic test. Sometimes first assert fail
+        """
         INSTANCE: int = 13
         reg = RandomForestRegressor()
         x, y = load_boston(return_X_y=True)

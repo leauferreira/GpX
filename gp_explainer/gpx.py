@@ -5,6 +5,7 @@ import pydotplus as pydotplus
 from scipy.spatial import distance
 from gplearn.genetic import SymbolicRegressor
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_log_error, mean_squared_error
+from sklearn.preprocessing import Binarizer
 
 
 class Gpx:
@@ -23,7 +24,8 @@ class Gpx:
                  gp_model=None,
                  gp_hyper_parameters=None,
                  feature_names=None,
-                 random_state=None):
+                 random_state=None,
+                 k_neighbor=4):
         """
 
         :param predict: prediction function from black-box model. y_hat = predict(instance)
@@ -35,7 +37,6 @@ class Gpx:
         :param gp_model: Genetic programming model (default provided by gplearn)
         :param gp_hyper_parameters: dictionary with hyper parameters of GP model
         :param feature_names: list with all features Names
-        :param labels: unique label of each class
         """
         self.final_population = None
         self.predict = predict
@@ -49,8 +50,14 @@ class Gpx:
         self.feature_names = feature_names
         self.x_around = None
         self.y_around = None
+
+        if self.problem == 'classification':
+            self.labels = np.unique(self.y_train)
+        else:
+            self.labels = None
+
+        self.k_neighbor = k_neighbor
         self.gp_model = gp_model
-        self.labels = set(self.y_train)
 
         format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         resource_path = Path(__file__).parent / 'gpx.log'
@@ -65,10 +72,35 @@ class Gpx:
             if self.problem == 'regression':
                 self.gp_model.fit(self.x_around, self.y_around)
 
-            if self.problem == 'classification':
-                self._gp_model.fit(self.x_around, self.y_around[:, 0].reshape(-1))
+            elif self.problem == 'classification' and len(self.labels) == 2:
+                self.gp_model.fit(self.x_around, self.y_around[:, 0].reshape(-1))
+
+            elif len(self.labels) > 2:
+                # y_bin = np.zeros(shape=self.y_around.shape)
+                # idx = np.argmax(self.y_around, axis=1)
+                # for i, idx_ in enumerate(idx):
+                #     y_bin[i, idx_] = 1
+                # print(y_bin)
+                for i, label in enumerate(self.labels):
+                    # y_sum = np.sum(y_bin[:, i])
+                    # if y_sum / len(y_bin) < .4:
+                    #     x_aux = self.x_around[y_bin[:, i] == 1]
+                    #     y_aux = y_bin[y_bin[:, i] == 1]
+                    #     print(y_aux.shape)
+                    #     x_aux = np.append(x_aux, self.x_around[y_bin[:, i] == 0][:int(y_sum), :], axis=0)
+                    #     print(x_aux.shape)
+                    #     y_aux = np.append(y_aux, y_bin[y_bin[:, i] == 0][:int(y_sum)], axis=0)
+                    #     print(y_aux.shape)
+                    #     self.gp_model[label].fit(x_aux, y_aux[:, i])
+                    # else:
+                    #     self.gp_model[label].fit(self.x_around, y_bin[:, i].ravel())
+                    self.gp_model[label].fit(self.x_around, self.y_around[:, i].ravel())
+
+            else:
+                raise ValueError("fit problem type unknown")
+
         else:
-            raise ValueError("x_arond and y_around must be created")
+            raise ValueError("x_around and y_around must be created")
 
     def gp_prediction(self, x):
 
@@ -76,15 +108,32 @@ class Gpx:
 
             return self.gp_model.predict(x)
 
-        elif self.problem == 'classification':
+        elif self.problem == 'classification' and len(self.labels) == 2:
 
             y_proba = self.gp_model.predict(x)
-            max = np.max(self.y_train)
-            min = np.min(self.y_train)
+            max_ = np.max(self.y_train)
+            min_ = np.min(self.y_train)
 
-            y = tuple(max if x <= .5 else min for x in y_proba)
+            y = tuple(max_ if x <= .5 else min_ for x in y_proba)
 
             return np.array(y)
+
+        elif len(self.labels) > 2:
+            m_y = np.zeros(shape=(x.shape[0], len(self.labels)))
+            for i, label in enumerate(self.labels):
+                y_aux = self.gp_model[label].predict(x)
+                m_y[:, i] = y_aux.ravel()
+
+            y_proba = np.argmax(m_y, axis=1)
+            y = np.array([])
+            for idx in y_proba:
+                y = np.append(y, self.labels[idx])
+
+            return y
+
+        else:
+            raise ValueError('predict problem type unknown')
+
 
     @property
     def gp_model(self):
@@ -93,15 +142,36 @@ class Gpx:
     @gp_model.setter
     def gp_model(self, gp_model):
 
-        if gp_model is None:
-            f_names = self.gp_hyper_parameters.get('feature_names')
-            if f_names is None:
-                self.gp_hyper_parameters['feature_names'] = self.feature_names
-            self._gp_model = SymbolicRegressor(**self.gp_hyper_parameters)
+        if self.problem == 'regression' or len(self.labels) == 2:
 
+            if gp_model is None:
+                f_names = self.gp_hyper_parameters.get('feature_names')
+                if f_names is None:
+                    self.gp_hyper_parameters['feature_names'] = self.feature_names
+                self._gp_model = SymbolicRegressor(**self.gp_hyper_parameters)
+
+            else:
+
+                self._gp_model = gp_model
         else:
 
-            self._gp_model = gp_model
+            dict_gp_model = {}
+
+            for i in self.labels:
+
+                if gp_model is None:
+                    f_names = self.gp_hyper_parameters.get('feature_names')
+
+                    if f_names is None:
+                        self.gp_hyper_parameters['feature_names'] = self.feature_names
+
+                    dict_gp_model[i] = SymbolicRegressor(**self.gp_hyper_parameters)
+
+                else:
+
+                    dict_gp_model[i] = gp_model
+
+            self._gp_model = dict_gp_model
 
     @property
     def x_train_measure(self):
@@ -113,7 +183,6 @@ class Gpx:
             self._x_train_measure = np.std(self.x_train, axis=0) * .2
         else:
             self._x_train_measure = x_train_measure
-
 
     @property
     def gp_hyper_parameters(self):
@@ -216,13 +285,23 @@ class Gpx:
 
         noise_set = np.concatenate(tuple(k_neighbor.values()), axis=0)
 
-        return k_neighbor, k_distance, each_distance, each_class, self.max_min_matrix(noise_set,
-                                                                                      noise_range=self.num_samples,
-                                                                                      dist_type='uniform')
+        x_created = self.max_min_matrix(noise_set,
+                                        noise_range=self.num_samples,
+                                        dist_type='uniform')
+
+        x_created = np.append(x_created, noise_set, axis=0)
+
+        y_created = self.predict(x_created)
+
+        return x_created, y_created, k_neighbor, k_distance, each_distance, each_class
 
     def explaining(self, instance):
 
-        self.x_around, self.y_around = self.noise_set(instance)
+        if self.problem == 'classification':
+            self.x_around, self.y_around, _, _, _, _ = self.noise_k_neighbor(instance, self.k_neighbor)
+        else:
+            self.x_around, self.y_around = self.noise_set(instance)
+
         self.gp_fit()
 
         return self.gp_prediction(instance.reshape(1, -1))
@@ -260,12 +339,20 @@ class Gpx:
 
     def proba_transform(self, y_proba):
 
-        max = np.max(self.y_train)
-        min = np.min(self.y_train)
+        if len(self.labels) <= 2:
 
-        y = tuple(max if x <= .5 else min for x in y_proba[:, 0])
+            max = np.max(self.y_train)
+            min = np.min(self.y_train)
+            y = tuple(max if x <= .5 else min for x in y_proba[:, 0])
+            return np.array(y)
 
-        return np.array(y)
+        else:
+
+            y_aux = np.argmax(y_proba, axis=1)
+            for i, j in enumerate(y_aux):
+                y_aux[i] = self.labels[j]
+
+            return y_aux
 
     def understand(self, instance=None, metric='report'):
         """
@@ -398,5 +485,3 @@ class Gpx:
                     feature_dict[self.feature_names[p]] = (mmm[:, p], np_sens)
 
         return feature_dict
-
-
