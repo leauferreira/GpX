@@ -5,7 +5,7 @@
 
 
 ```sh
-pip install -U git+https://github.com/leauferreira/GpX
+pip install -qU git+https://github.com/leauferreira/GpX
 ```
 
 ## Examples
@@ -15,4 +15,4 @@ pip install -U git+https://github.com/leauferreira/GpX
 
 If you use GPX, we would appreciate citation: 
 
-* [Applying Genetic Programming to Improve Interpretability in Machine Learning Models](http://arxiv.org/abs/2005.09512)
+* [Applying Genetic Programming to Improve Interpretability in Machine Learning Models](https://doi.org/10.1109/CEC48606.2020.9185620)
