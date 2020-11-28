@@ -4,14 +4,13 @@ from pathlib import Path
 import pydotplus as pydotplus
 from scipy.spatial import distance
 from gplearn.genetic import SymbolicRegressor
-from sklearn.metrics import accuracy_score, f1_score, mean_squared_log_error, mean_squared_error
-from sklearn.preprocessing import Binarizer
+from sklearn.metrics import accuracy_score, f1_score,  mean_squared_error, r2_score
+import sympy as sp
 
 
 class Gpx:
     """
-    Genetic Programming Explainable main class. This class will provide interpretability by a single
-    prediction made by a black-box model.
+    Genetic Programming Explainer
     """
 
     def __init__(self,
@@ -25,7 +24,7 @@ class Gpx:
                  gp_hyper_parameters=None,
                  feature_names=None,
                  random_state=None,
-                 k_neighbor=4):
+                 k_neighbor=None):
         """
 
         :param predict: prediction function from black-box model. y_hat = predict(instance)
@@ -65,9 +64,46 @@ class Gpx:
                             filemode='w', format=format, datefmt='%d/%m/%Y %I:%M:%S %p')
         self.logger = logging.getLogger(__name__)
 
+    def program2sympy(self):
+        program = str(self.gp_model._program)
+        program = program.replace('add', 'Add')\
+            .replace('mul', 'Mul')
+
+        return program
+
+    def gradient_analysis(self):
+
+        sym = []
+        df_partial = {}
+        program = self.program2sympy()
+        for name in self._feature_names:
+            if name in program:
+                sym.append(name)
+
+        if sym:
+
+            m_sym = ' '.join(sym)
+            t_symbol = sp.symbols(m_sym)
+
+            if isinstance(t_symbol, sp.Symbol):
+                df = sp.diff(program, t_symbol)
+                df_partial[t_symbol] = df
+
+            else:
+
+                for s in t_symbol:
+                    df = sp.diff(program, s)
+                    df_partial[s] = df
+
+            return df_partial
+
+        else:
+
+            return 0
+
     def gp_fit(self):
 
-        if self.x_around is not None or self.y_around is not None:
+        if self.x_around is not None and self.y_around is not None:
 
             if self.problem == 'regression':
                 self.gp_model.fit(self.x_around, self.y_around)
@@ -76,25 +112,10 @@ class Gpx:
                 self.gp_model.fit(self.x_around, self.y_around[:, 0].reshape(-1))
 
             elif len(self.labels) > 2:
-                # y_bin = np.zeros(shape=self.y_around.shape)
-                # idx = np.argmax(self.y_around, axis=1)
-                # for i, idx_ in enumerate(idx):
-                #     y_bin[i, idx_] = 1
-                # print(y_bin)
+                threshold = 1/len(self.labels)
                 for i, label in enumerate(self.labels):
-                    # y_sum = np.sum(y_bin[:, i])
-                    # if y_sum / len(y_bin) < .4:
-                    #     x_aux = self.x_around[y_bin[:, i] == 1]
-                    #     y_aux = y_bin[y_bin[:, i] == 1]
-                    #     print(y_aux.shape)
-                    #     x_aux = np.append(x_aux, self.x_around[y_bin[:, i] == 0][:int(y_sum), :], axis=0)
-                    #     print(x_aux.shape)
-                    #     y_aux = np.append(y_aux, y_bin[y_bin[:, i] == 0][:int(y_sum)], axis=0)
-                    #     print(y_aux.shape)
-                    #     self.gp_model[label].fit(x_aux, y_aux[:, i])
-                    # else:
-                    #     self.gp_model[label].fit(self.x_around, y_bin[:, i].ravel())
-                    self.gp_model[label].fit(self.x_around, self.y_around[:, i].ravel())
+                    y_aux = (self.y_around[:, i] > threshold) * 1
+                    self.gp_model[label].fit(self.x_around, y_aux.ravel())
 
             else:
                 raise ValueError("fit problem type unknown")
@@ -118,7 +139,8 @@ class Gpx:
 
             return np.array(y)
 
-        elif len(self.labels) > 2:
+        elif self.problem == 'classification' and len(self.labels) > 2:
+
             m_y = np.zeros(shape=(x.shape[0], len(self.labels)))
             for i, label in enumerate(self.labels):
                 y_aux = self.gp_model[label].predict(x)
@@ -132,6 +154,7 @@ class Gpx:
             return y
 
         else:
+
             raise ValueError('predict problem type unknown')
 
 
@@ -277,7 +300,9 @@ class Gpx:
 
     def noise_k_neighbor(self, instance, k):
 
-        each_class = {label: self.x_train[self.y_train == label, :] for label in self.labels}
+        y_my = self.y_train.reshape(-1)
+
+        each_class = {label: self.x_train[y_my == label, :] for label in self.labels}
         each_distance = {label: distance.cdist(my_class, instance.reshape(1, -1))
                          for label, my_class in each_class.items()}
         k_distance = {label: np.argsort(dist_class, axis=0)[:k] for label, dist_class in each_distance.items()}
@@ -295,15 +320,16 @@ class Gpx:
 
         return x_created, y_created, k_neighbor, k_distance, each_distance, each_class
 
-    def explaining(self, instance):
-
-        if self.problem == 'classification':
-            self.x_around, self.y_around, _, _, _, _ = self.noise_k_neighbor(instance, self.k_neighbor)
+    def generate_data_around(self, instance):
+        if self.k_neighbor is None:
+            return self.noise_set(instance)
         else:
-            self.x_around, self.y_around = self.noise_set(instance)
+            x_around, y_around, _, _, _, _ = self.noise_k_neighbor(instance, self.k_neighbor)
+            return x_around, y_around
 
+    def explaining(self, instance):
+        self.x_around, self.y_around = self.generate_data_around(instance)
         self.gp_fit()
-
         return self.gp_prediction(instance.reshape(1, -1))
 
     def make_graphviz_model(self):
@@ -392,15 +418,27 @@ class Gpx:
         elif self.problem == 'regression':
 
             if metric == 'report':
-                d['msle'] = mean_squared_log_error(y_hat_bb, y_hat_gpx)
                 d['mse'] = mean_squared_error(y_hat_bb, y_hat_gpx)
+                d['r2'] = r2_score(y_hat_bb, y_hat_gpx)
+                d['rmse'] = mean_squared_error(y_hat_bb, y_hat_gpx, squared=False)
+                d['rmspe'] = np.mean(np.sqrt(((y_hat_bb - y_hat_gpx)/y_hat_bb)**2))
+                d['mape'] = np.mean(np.abs((y_hat_bb - y_hat_gpx)/y_hat_bb))
                 return d
 
-            elif metric == "msle":
-                return mean_squared_log_error(y_hat_bb, y_hat_gpx)
+            elif metric == 'r2':
+                return r2_score(y_hat_bb, y_hat_gpx)
 
             elif metric == 'mse':
                 return mean_squared_error(y_hat_bb, y_hat_gpx)
+
+            elif metric == 'rmse':
+                return mean_squared_error(y_hat_bb, y_hat_gpx, squared=False)
+
+            elif metric == 'rmspe':
+                return np.mean(np.sqrt(((y_hat_bb - y_hat_gpx)/y_hat_bb)**2))
+
+            elif metric == 'mape':
+                return np.mean(np.abs((y_hat_bb - y_hat_gpx)/y_hat_bb))
 
             else:
                 self.logger.error('understand can not be used with {}'.format(metric))
@@ -475,7 +513,7 @@ class Gpx:
                     sens = 1 - np.mean((y_true == y_eval) * 1)
 
                     if sens > 0 and verbose:
-                        print("|{:^10.8}|{:^10.2f}|{:^20.2f}|".format(self.features_names[p], rate, sens))
+                        print("|{:^10.8}|{:^10.2f}|{:^20.2f}|".format(self.feature_names[p], rate, sens))
 
                     if sens > 0:
                         np_sens[i] = sens

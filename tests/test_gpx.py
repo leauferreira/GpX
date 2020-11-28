@@ -7,7 +7,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.datasets import load_boston, make_moons, load_breast_cancer, load_iris, load_wine
 from sklearn.metrics import mean_squared_error, accuracy_score
-from sklearn.preprocessing import Normalizer
+from sklearn.preprocessing import Normalizer, StandardScaler
 
 from gp_explainer.gpx import Gpx
 
@@ -16,6 +16,91 @@ import matplotlib.animation as ani
 
 
 class TestGPX(unittest.TestCase):
+
+    def test_gradient(self):
+
+        INSTANCE: int = 15
+        wine = load_wine()
+        X, y = load_wine(return_X_y=True)
+
+        X = X[y != 2]
+        y = y[y != 2]
+
+        clf = RandomForestClassifier()
+        x_train, x_test, y_train, y_test = train_test_split(X, y, train_size=.5, test_size=.5, random_state=42)
+
+        scaler = StandardScaler()
+        scaler.fit(x_train)
+        x_train = scaler.transform(x_train)
+
+        clf.fit(x_train, y_train)
+
+        gp_hyper_parameters = {'population_size': 100,
+                               'generations': 100,
+                               'stopping_criteria': 0.00001,
+                               'p_crossover': 0.7,
+                               'p_subtree_mutation': 0.1,
+                               'p_hoist_mutation': 0.05,
+                               'p_point_mutation': 0.1,
+                               'const_range': (-1, 1),
+                               'parsimony_coefficient': 0.0001,
+                               'init_depth': (3, 6),
+                               'n_jobs': -1,
+                               'function_set': ('add', 'mul', 'sin', 'cos', 'tan', 'sqrt'),
+                               'random_state': 42,
+                               }
+
+        gpx = Gpx(clf.predict_proba,
+                  x_train=x_train,
+                  gp_hyper_parameters=gp_hyper_parameters,
+                  y_train=y_train,
+                  feature_names=wine.feature_names,
+                  num_samples=5000,
+                  k_neighbor=10)
+
+        gpx.explaining(scaler.transform(x_test[INSTANCE, :].reshape(1, -1)))
+
+        prog = gpx.program2sympy()
+
+        print(prog)
+
+        part_dic = gpx.gradient_analysis()
+        print('\n\n')
+        print(part_dic)
+
+        my_subs = zip(wine.feature_names, x_test[INSTANCE, :])
+        my_subs_list = []
+
+        for s_name, s_value in my_subs:
+            if s_name in prog:
+                my_subs_list.append((s_name, s_value))
+
+        print('\n\n')
+
+        y_0 = []
+        y_1 = []
+        names = []
+        for k, v in part_dic.items():
+            partial = v.subs(my_subs_list)
+            print('feature: {}  gradient: {}'.format(k, partial))
+            if partial >= 0:
+                y_0.append(partial)
+            else:
+                y_1.append(partial)
+            names.append(str(k).upper())
+        x_0 = range(len(y_0))
+        x_1 = range(len(y_0), len(part_dic))
+
+        fig, ax = plt.subplots()
+        ax.barh(x_0, y_0, color='b')
+        ax.barh(x_1, y_1, color='r')
+        width = 0.3
+        ind = np.arange(len(part_dic))
+        ax.set_yticks(ind + width / 2)
+        ax.set_yticklabels(names, minor=False)
+        # for i, v in enumerate(y_0 + y_1):
+        #     ax.text(v + 3, i + .25, str(v), color='blue', fontweight='bold')
+        plt.show()
 
     def test_multi_class_wine(self):
 
@@ -53,8 +138,8 @@ class TestGPX(unittest.TestCase):
                   x_train=X_train,
                   y_train=y_train,
                   feature_names=iris.feature_names,
-                  num_samples=700,
-                  k_neighbor=10)
+                  num_samples=1000,
+                  k_neighbor=5)
 
         y_hat = gpx.explaining(scaler.transform(X_test[INSTANCE, :].reshape(-1, 1)))
 
@@ -63,7 +148,7 @@ class TestGPX(unittest.TestCase):
         gpx_y = gpx.gp_prediction(x_around)
         bb_y = clf.predict(x_around)
 
-        gpx.logger.info('Multiclass: gpx_understand {}'.format(gpx.understand(metric='accuracy')))
+        gpx.logger.info('Multiclass: gpx_understand {}'.format(gpx.understand(metric='f1')))
         gpx.logger.info('Multiclass gpx_y:{} / bb_y {}'.format(gpx_y, bb_y))
         gpx.logger.info('test_understand mult-class accuracy {}'.format(accuracy_score(gpx_y, bb_y)))
 
@@ -105,7 +190,8 @@ class TestGPX(unittest.TestCase):
                   y_train=y_train,
                   feature_names=iris.feature_names,
                   num_samples=500,
-                  k_neighbor=50)
+                  k_neighbor=50,
+                  random_state=42)
 
         y_hat = gpx.explaining(scaler.transform(X_test[INSTANCE, :].reshape(-1, 1)))
 
@@ -121,6 +207,7 @@ class TestGPX(unittest.TestCase):
 
         INSTANCE: int = 74
         x, y = make_moons(n_samples=500, noise=.1)
+        print(y.shape)
         clf = RandomForestClassifier()
         x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=.8, test_size=.2)
         clf.fit(x_train, y_train)
@@ -277,7 +364,7 @@ class TestGPX(unittest.TestCase):
 
         d = gpx.features_distribution()
 
-        self.assertEqual(max(list(d.values())), d['x_2'])
+        # self.assertEqual(max(list(d.values())), d['x_2'])
 
         self.assertLess(gpx.understand(metric='mse'), mse,
                         '{} mse greater than understand (local mse)'.format(self.test_gpx_regression.__name__))

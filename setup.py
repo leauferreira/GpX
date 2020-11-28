@@ -2,8 +2,9 @@ from setuptools import setup
 
 setup(
     name='GPX',
-    version='0.0.3',
-    packages=['gp_explainer'],
+    version='0.0.5',
+    packages=['gp_explainer', 'pydm', 'tests'],
+    package_data={'pydm': ['data/*.csv']},
     url='https://github.com/leauferreira/GpX',
     license='MIT',
     author='Leonardo Augusto Ferreira',
@@ -14,5 +15,6 @@ setup(
         'numpy~=1.18.4',
         'gplearn~=0.4.1',
         'pydotplus~=2.0.2',
+        'pandas~=1.0.4',
     ],
 )
