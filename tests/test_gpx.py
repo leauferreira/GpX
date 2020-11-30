@@ -217,30 +217,6 @@ class TestGPX(unittest.TestCase):
 
         ns, y_created, k_neighbor, k_distance, each_distance, each_class = gpx.noise_k_neighbor(x_test[INSTANCE, :], 4)
 
-        # print(each_distance)
-
-        # idx = np.where(each_distance[0] == np.min(each_distance[0], axis=0))
-        # print(idx)
-        #
-        # print(k_distance[0])
-
-        # print(each_class[0][k_distance[0]])
-        # print(k_neighbor[0])
-
-        # print(each_class)
-        #
-        # plt.figure(figsize=(6, 4))
-        # plt.scatter(each_class[0][:, 0], each_class[0][:, 1],  cmap='viridis')
-        # plt.scatter(each_class[1][:, 0], each_class[1][:, 1],  cmap='hot')
-        # plt.grid(True)
-        #
-        # plt.figure(figsize=(6, 4))
-        # plt.scatter(x_train[:, 0], x_train[:, 1], c=y_train,  cmap='viridis')
-        # plt.grid(True)
-        # plt.show()
-
-        # print(x_train[-4:, :])
-        #
         x_train = np.append(x_train, ns, axis=0)
         y_train = np.append(y_train, clf.predict(ns))
         x_train = np.append(x_train, k_neighbor[0], axis=0)

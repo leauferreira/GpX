@@ -321,11 +321,11 @@ class Gpx:
         return x_created, y_created, k_neighbor, k_distance, each_distance, each_class
 
     def generate_data_around(self, instance):
-        if self.k_neighbor is None:
-            return self.noise_set(instance)
-        else:
+        if self.k_neighbor is not None and self.problem == 'classification':
             x_around, y_around, _, _, _, _ = self.noise_k_neighbor(instance, self.k_neighbor)
             return x_around, y_around
+        else:
+            return self.noise_set(instance)
 
     def explaining(self, instance):
         self.x_around, self.y_around = self.generate_data_around(instance)

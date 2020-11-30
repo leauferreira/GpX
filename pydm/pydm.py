@@ -293,29 +293,13 @@ def data_regression_factory(data_name):
 
 
 def get_all_regressions():
-    data_dic = {}
-    for i in range(1, 11):
-        data_dic[Regression(i).name] = data_regression_factory(Regression(i))
-    return data_dic
+    return {mclass.name: data_regression_factory(mclass) for mclass in Regression}
 
 
 def get_all_classifications():
-    data_dic = {}
-    for i in range(1, 11):
-        data_dic[Classification(i).name] = data_classification_factory(Classification(i))
-    return data_dic
+    return {mclass.name: data_classification_factory(mclass) for mclass in Classification}
 
 
 def get_all_multiclass():
     return {mclass.name: data_multclass_factory(mclass) for mclass in MultiClass}
-
-
-if __name__ == "__main__":
-
-    dm = data_multclass_factory(MultiClass.iris)
-    print(dm.pd_data.head())
-    all_pydm = get_all_multiclass()
-    for name, data in all_pydm.items():
-        x, y = data.get_np_x_y()
-        print(np.unique(y))
 

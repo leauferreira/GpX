@@ -10,11 +10,11 @@ setup(
     author='Leonardo Augusto Ferreira',
     author_email='leauferreira@cpdee.ufmg.br',
     description='GPX - Genetic Programming Explainer',
-    python_requires='>=3.0',
+    python_requires='>=3.5',
     install_requires=[
         'numpy~=1.18.4',
         'gplearn~=0.4.1',
         'pydotplus~=2.0.2',
-        'pandas~=1.0.4',
+        'pandas~=1.1.0',
     ],
 )
