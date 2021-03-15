@@ -7,6 +7,8 @@ from gplearn.genetic import SymbolicRegressor
 from sklearn.metrics import accuracy_score, f1_score,  mean_squared_error, r2_score
 import sympy as sp
 
+from gp_explainer.noise_set import NoiseSet
+
 
 class Gpx:
     """
@@ -248,87 +250,9 @@ class Gpx:
         if self._feature_names is None:
             self._feature_names = list('x_' + str(i) for i in range(self.x_train.shape[1]))
 
-    def create_noise_set(self, instance):
-        """
-        Create a noise set around a instance that will be explain
-
-        :param instance: numpy array with size equals to number of features in problem.
-        :return: x, y created around instance (y is predict by a black box model)
-        """
-
-        d = len(instance)
-        x_created = np.random.normal(instance, scale=self.x_train_measure, size=(self.num_samples, d))
-        y_created = self.predict(x_created)
-
-        if self.problem == 'regression':
-
-            return x_created, y_created
-
-        else:
-
-            y_min = np.min(y_created)
-            y_max = np.max(y_created)
-
-            if y_max != y_min:
-
-                return x_created, y_created
-
-            else:
-
-                i_want = np.where(self.y_train != y_max)[0]
-                x_other_class = self.x_train[i_want, :]
-                cut = np.floor(self.num_samples * .2)
-                cut = int(cut)
-                x_created = np.concatenate((x_created, x_other_class[:cut, :]), axis=0)
-                y_created = self.predict(x_created)
-
-                return x_created, y_created
-
-    def noise_set(self, instance):
-        """
-        Create a noise set around a instance that will be explain
-
-        :param instance: numpy array with size equals to number of features in problem.
-        :return: x, y created around instance (y is predict by a black box model predict)
-        """
-
-        d = len(instance)
-        x_created = np.random.normal(instance, scale=self.x_train_measure, size=(self.num_samples, d))
-        y_created = self.predict(x_created)
-
-        return x_created, y_created
-
-    def noise_k_neighbor(self, instance, k):
-
-        y_my = self.y_train.reshape(-1)
-
-        each_class = {label: self.x_train[y_my == label, :] for label in self.labels}
-        each_distance = {label: distance.cdist(my_class, instance.reshape(1, -1))
-                         for label, my_class in each_class.items()}
-        k_distance = {label: np.argsort(dist_class, axis=0)[:k] for label, dist_class in each_distance.items()}
-        k_neighbor = {label: each_class[label][idx][:, 0] for label, idx in k_distance.items()}
-
-        noise_set = np.concatenate(tuple(k_neighbor.values()), axis=0)
-
-        x_created = self.max_min_matrix(noise_set,
-                                        noise_range=self.num_samples,
-                                        dist_type='uniform')
-
-        x_created = np.append(x_created, noise_set, axis=0)
-
-        y_created = self.predict(x_created)
-
-        return x_created, y_created, k_neighbor, k_distance, each_distance, each_class
-
-    def generate_data_around(self, instance):
-        if self.k_neighbor is not None and self.problem == 'classification':
-            x_around, y_around, _, _, _, _ = self.noise_k_neighbor(instance, self.k_neighbor)
-            return x_around, y_around
-        else:
-            return self.noise_set(instance)
-
     def explaining(self, instance):
-        self.x_around, self.y_around = self.generate_data_around(instance)
+        ns = NoiseSet(self)
+        self.x_around, self.y_around = ns.generate_data_around(instance)
         self.gp_fit()
         return self.gp_prediction(instance.reshape(1, -1))
 
@@ -393,7 +317,8 @@ class Gpx:
             y_hat_gpx = self.gp_prediction(self.x_around)
             y_hat_bb = self.y_around
         else:
-            x_around, y_around = self.noise_set(instance)
+            ns = NoiseSet(self)
+            x_around, y_around = ns.noise_set(instance)
             y_hat_gpx = x_around
             y_hat_bb = self.proba_transform(self.predict(x_around))
 
@@ -449,6 +374,15 @@ class Gpx:
             raise ValueError('understand can not be used with problem type as {}'.format(metric))
 
     def max_min_matrix(self, noise_set=None, dist_type='upward', noise_range=100):
+
+        """
+        Provide a matrix for explainer analysis. Must be for a class of utilities.
+
+        :param noise_set:
+        :param dist_type:
+        :param noise_range:
+        :return:
+        """
 
         if noise_set is None:
 

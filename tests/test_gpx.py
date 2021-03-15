@@ -1,6 +1,7 @@
 import unittest
 
 import numpy as np
+import sympy as sp
 
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
@@ -13,6 +14,8 @@ from gp_explainer.gpx import Gpx
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as ani
+
+from gp_explainer.noise_set import NoiseSet
 
 
 class TestGPX(unittest.TestCase):
@@ -61,6 +64,8 @@ class TestGPX(unittest.TestCase):
         gpx.explaining(scaler.transform(x_test[INSTANCE, :].reshape(1, -1)))
 
         prog = gpx.program2sympy()
+
+        print(sp.latex(sp.sympify(prog)))
 
         print(prog)
 
@@ -214,8 +219,9 @@ class TestGPX(unittest.TestCase):
 
         gpx = Gpx(clf.predict_proba, x_train=x_train, y_train=y_train, feature_names=['x', 'y'], num_samples=1000)
         gpx.explaining(x_test[INSTANCE, :])
+        noise_set = NoiseSet(gpx)
 
-        ns, y_created, k_neighbor, k_distance, each_distance, each_class = gpx.noise_k_neighbor(x_test[INSTANCE, :], 4)
+        ns, y_created, k_neighbor, k_distance, each_distance, each_class = noise_set.noise_k_neighbor(x_test[INSTANCE, :], 4)
 
         x_train = np.append(x_train, ns, axis=0)
         y_train = np.append(y_train, clf.predict(ns))

@@ -2,7 +2,6 @@ from unittest import TestCase
 import pydm.pydm as pdm
 
 
-
 class TestDataManager(TestCase):
 
     def test_get_all_multiclass(self):
