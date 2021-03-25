@@ -12,6 +12,8 @@ from sklearn.preprocessing import Normalizer, StandardScaler
 
 from gp_explainer.gpx import Gpx
 
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.animation as ani
 
