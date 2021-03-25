@@ -136,3 +136,4 @@ dmypy.json
 # gpx stuff
 *.gif
 
+/images_svg/

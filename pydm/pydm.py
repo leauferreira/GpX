@@ -8,6 +8,10 @@ import numpy as np
 class DataManager:
 
     def __init__(self, builder):
+        """
+
+        :param builder:
+        """
         self.pd_data = builder.pd_data
         self.np_x = builder.np_x
         self.np_y = builder.np_y
