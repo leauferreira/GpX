@@ -86,3 +86,4 @@ class NoiseSet:
         else:
             return self.noise_set(instance)
 
+
