@@ -9,6 +9,11 @@ import sympy as sp
 
 from gp_explainer.noise_set import NoiseSet
 
+fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+resource_path = 'unittest_gpx.log'
+logging.basicConfig(filename=resource_path, level=logging.DEBUG,
+                    filemode='w', format=fmt, datefmt='%d/%m/%Y %I:%M:%S %p')
+logging.getLogger(__name__)
 
 class Gpx:
     """
@@ -60,11 +65,7 @@ class Gpx:
         self.k_neighbor = k_neighbor
         self.gp_model = gp_model
 
-        format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        resource_path = Path(__file__).parent / 'gpx.log'
-        logging.basicConfig(filename=resource_path, level=logging.DEBUG,
-                            filemode='w', format=format, datefmt='%d/%m/%Y %I:%M:%S %p')
-        self.logger = logging.getLogger(__name__)
+
 
     def program2sympy(self):
         program = str(self.gp_model._program)
@@ -86,21 +87,24 @@ class Gpx:
 
             m_sym = ' '.join(sym)
             t_symbol = sp.symbols(m_sym)
+            logging.info(self.gradient_analysis.__name__ + " - " + str(t_symbol))
 
             if isinstance(t_symbol, sp.Symbol):
                 df = sp.diff(program, t_symbol)
                 df_partial[t_symbol] = df
+                logging.info(self.gradient_analysis.__name__ + ": t_symbol is sympy object ")
 
             else:
 
                 for s in t_symbol:
                     df = sp.diff(program, s)
                     df_partial[s] = df
+                    logging.info(self.gradient_analysis.__name__ + ":t_symbol is not sympy object")
 
             return df_partial
 
         else:
-
+            logging.info("return 0")
             return 0
 
     def gp_fit(self):
@@ -366,11 +370,11 @@ class Gpx:
                 return np.mean(np.abs((y_hat_bb - y_hat_gpx)/y_hat_bb))
 
             else:
-                self.logger.error('understand can not be used with {}'.format(metric))
+                logging.error('understand can not be used with {}'.format(metric))
                 raise ValueError('understand can not be used with {}'.format(metric))
 
         else:
-            self.logger.error('understand can not be used with problem type as {}'.format(metric))
+            logging.error('understand can not be used with problem type as {}'.format(metric))
             raise ValueError('understand can not be used with problem type as {}'.format(metric))
 
     def max_min_matrix(self, noise_set=None, dist_type='upward', noise_range=100):

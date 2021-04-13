@@ -12,11 +12,16 @@ from sklearn.preprocessing import Normalizer, StandardScaler
 
 from gp_explainer.gpx import Gpx
 
-
+import logging
 import matplotlib.pyplot as plt
 import matplotlib.animation as ani
 
-from gp_explainer.noise_set import NoiseSet
+# from gp_explainer.noise_set import NoiseSet
+
+# fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+# logging.basicConfig(filename="test_gpx.log", level=logging.INFO,
+#                     filemode='w', format=fmt, datefmt='%d/%m/%Y %I:%M:%S %p')
+# logging.getLogger(__name__)
 
 
 class TestGPX(unittest.TestCase):
@@ -71,6 +76,7 @@ class TestGPX(unittest.TestCase):
         print(prog)
 
         part_dic = gpx.gradient_analysis()
+
         print('\n\n')
         print(part_dic)
 
@@ -293,9 +299,7 @@ class TestGPX(unittest.TestCase):
         print(sens_gpx)
 
     def test_gpx_regression(self):
-        """
-        stochastic test. Sometimes first assert fail
-        """
+
         INSTANCE: int = 13
         reg = RandomForestRegressor()
         x, y = load_boston(return_X_y=True)

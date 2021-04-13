@@ -1,5 +1,14 @@
 import numpy as np
 from scipy.spatial import distance
+from gp_explainer.utils import Utils
+import logging
+
+
+# format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+# resource_path = 'noise_set.log'
+# logging.basicConfig(filename=resource_path, level=logging.INFO,
+#                     filemode='w', format=format, datefmt='%d/%m/%Y %I:%M:%S %p')
+# logging.getLogger(__name__)
 
 
 class NoiseSet:
@@ -57,21 +66,57 @@ class NoiseSet:
 
         return x_created, y_created
 
+    @staticmethod
+    def k_neighbor(instance, k, x_train, y_train, labels, num_samples=100):
+        lbs = sorted(labels)
+        each_class = tuple(np.argwhere(y_train == label)[:, 0] for label in lbs)
+        each_distance = tuple(distance.cdist(x_train[idx], instance.reshape(1, -1)) for idx in each_class)
+        k_distance = tuple(np.argsort(dist_class, axis=0)[:k][:, 0] for dist_class in each_distance)
+        k_neighbor = tuple(x_train[ec[kd]] for kd, ec in zip(k_distance, each_class))
+
+        noise_set = np.concatenate(k_neighbor, axis=0)
+
+        x_created = Utils.max_min_matrix(noise_set,
+                                         noise_range=num_samples,
+                                         dist_type='uniform')
+
+        x_created = np.append(x_created, noise_set, axis=0)
+
+        logging.info(NoiseSet.k_neighbor.__name__ + f": k = {k}")
+
+        return x_created, k_neighbor, k_distance, each_distance, each_class
+
+    def k_neighbor_adapter(self, instance, k):
+
+        x_created,\
+            k_neighbor,\
+            k_distance,\
+            each_distance,\
+            each_class = NoiseSet.k_neighbor(instance,
+                                             k,
+                                             self.xpr.x_train,
+                                             self.xpr.y_train,
+                                             self.xpr.labels,
+                                             num_samples=self.xpr.num_samples)
+
+        y_created = self.xpr.predict(x_created)
+
+        return x_created, y_created, k_neighbor, k_distance, each_distance, each_class
+
     def noise_k_neighbor(self, instance, k):
 
         y_my = self.xpr.y_train.reshape(-1)
 
         each_class = {label: self.xpr.x_train[y_my == label, :] for label in self.xpr.labels}
-        each_distance = {label: distance.cdist(my_class, instance.reshape(1, -1))
-                         for label, my_class in each_class.items()}
+        each_distance = {label: distance.cdist(my_class, instance.reshape(1, -1)) for label, my_class in each_class.items()}
         k_distance = {label: np.argsort(dist_class, axis=0)[:k] for label, dist_class in each_distance.items()}
         k_neighbor = {label: each_class[label][idx][:, 0] for label, idx in k_distance.items()}
 
         noise_set = np.concatenate(tuple(k_neighbor.values()), axis=0)
 
         x_created = self.xpr.max_min_matrix(noise_set,
-                                        noise_range=self.xpr.num_samples,
-                                        dist_type='uniform')
+                                            noise_range=self.xpr.num_samples,
+                                            dist_type='uniform')
 
         x_created = np.append(x_created, noise_set, axis=0)
 
