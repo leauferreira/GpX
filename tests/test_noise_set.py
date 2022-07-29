@@ -16,7 +16,7 @@ from gp_explainer.noise_set import NoiseSet
 class TestNoiseSet(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.PRINT: bool = False
+        self.PRINT: bool = True
         self.NUN_SAMPLES: int = 250
         self.INSTANCE: int = 74
         x, y = make_moons(n_samples=500, noise=.1)
@@ -101,8 +101,8 @@ class TestNoiseSet(unittest.TestCase):
     def test_k_neighbor_adapter(self):
         k=4
         x_ns, y_ns, _, _, _, _ = self.ns.k_neighbor_adapter(instance=self.x_test[self.INSTANCE, :].reshape(1, -1), k=k)
-        self.assertEqual(len(x_ns), self.NUN_SAMPLES+ 2 * k)
-        self.assertEqual(len(y_ns), self.NUN_SAMPLES+ 2 * k)
+        self.assertEqual(len(x_ns), self.NUN_SAMPLES + 2 * k)
+        self.assertEqual(len(y_ns), self.NUN_SAMPLES + 2 * k)
 
     def test_print_k_neighbor_adapter(self):
         if self.PRINT:
