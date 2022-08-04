@@ -7,3 +7,4 @@ matplotlib~=3.2.1
 scipy~=1.4.1
 pandas~=1.0.4
 sympy~=1.6.2
+pmlb~=1.0.1.post3
