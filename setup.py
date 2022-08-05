@@ -12,9 +12,9 @@ setup(
     description='GPX - Genetic Programming Explainer',
     python_requires='>=3.5',
     install_requires=[
-        'numpy~=1.18.4',
+        'numpy~=1.23.1',
         'gplearn~=0.4.1',
         'pydotplus~=2.0.2',
-        'pandas~=1.1.0',
+        'pandas~=1.4.3',
     ],
 )
