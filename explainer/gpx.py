@@ -25,6 +25,8 @@ class GPX:
         return ns.noise_set(instance)
 
     def instance_understanding(self, instance):
-        pass
+        x_around, y_around = self.noise_set_generated(instance)
+        self.gp_model.fit(x_around, y_around)
 
-
+    def get_string_expression(self):
+        return self.gp_model.get_model_string(2)
