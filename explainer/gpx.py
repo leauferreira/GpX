@@ -3,6 +3,8 @@ from neighborhood.noise_set import NoiseSet
 
 import numpy as np
 
+from translate.gp_adapter_factory import GPAdapterFactory
+
 
 class GPX:
 
@@ -16,7 +18,7 @@ class GPX:
         self.x = x
         self.y = y
         self.model_predict = model_predict
-        self.gp_model = gp_model
+        self.gp_model = GPAdapterFactory(gp_model).get_gp_obj()
         self.noise_set_num_samples = noise_set_num_samples
 
     def noise_set_generated(self, instance):
@@ -29,4 +31,4 @@ class GPX:
         self.gp_model.fit(x_around, y_around)
 
     def get_string_expression(self):
-        return self.gp_model.get_model_string(2)
+        return self.gp_model.expression_string()
