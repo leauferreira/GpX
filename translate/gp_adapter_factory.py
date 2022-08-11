@@ -12,7 +12,7 @@ class GPAdapterFactory:
             return Adapter(self.obj, expression_string=self.obj.get_model_string)
 
         elif self.name.find("gplearn") >= 0:
-               return Adapter(self.obj, expression_string=lambda: self.obj._program)
+            return Adapter(self.obj, expression_string=lambda: self.obj._program)
 
         else:
             raise ValueError(f"{self.name} wasn't implemented")

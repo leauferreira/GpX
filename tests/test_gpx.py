@@ -16,9 +16,9 @@ class TestGPX(TestCase):
         self.INSTANCE: int = 13
         x, y = fetch_data('210_cloud', return_X_y=True, local_cache_dir='./datasets')
         self.x_train, \
-        self.x_test, \
-        self.y_train, \
-        self.y_test = train_test_split(x, y, test_size=.3)
+            self.x_test, \
+            self.y_train, \
+            self.y_test = train_test_split(x, y, test_size=.3)
 
         self.reg: RandomForestRegressor = RandomForestRegressor()
         self.reg.fit(self.x_train, self.y_train)
@@ -38,7 +38,6 @@ class TestGPX(TestCase):
                                'function_set': ('add', 'sub', 'mul', 'div')}
 
         self.my_gplearn = SymbolicRegressor(**gp_hyper_parameters)
-
         self.my_gplearn.fit(X=self.x_train, y=self.y_train)
 
         self.gpx = GPX(x=self.x_train, y=self.y_train, model_predict=self.reg.predict, gp_model=self.my_gplearn,

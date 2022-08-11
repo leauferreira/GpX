@@ -32,3 +32,4 @@ class GPX:
 
     def get_string_expression(self):
         return self.gp_model.expression_string()
+
