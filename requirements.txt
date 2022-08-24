@@ -8,3 +8,4 @@ scipy~=1.9.0
 pandas~=1.4.3
 sympy~=1.10.1
 pmlb~=1.0.1.post3
+graphviz~=0.20.1

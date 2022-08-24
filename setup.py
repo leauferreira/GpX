@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='GPX',
     version='0.0.6',
-    packages=['gp_explainer', 'explainer', 'neighborhood', "translate"],
+    packages=['gp_explainer', 'explainer', 'neighborhood', "translate", 'explain'],
     package_data={'pydm': ['data/*.csv']},
     url='https://github.com/leauferreira/GpX',
     license='MIT',

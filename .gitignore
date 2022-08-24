@@ -135,5 +135,7 @@ dmypy.json
 
 # gpx stuff
 *.gif
-
+*.gv
+*.pdf
+*.svg
 /images_svg/
