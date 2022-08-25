@@ -11,14 +11,9 @@ class TestTreeExplanation(TestCase):
                         '/ (sqrt(1 + ((-2) * X4) ^ 2))))))'
 
         sp_exp = sp.sympify(str_math_test)
-
         dot_sp = sp.dotprint(sp.N(sp_exp, 3))
-
         te = TreeExplanation(dot_sp)
-
         te.generate_image()
-
-
 
 
 

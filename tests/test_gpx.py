@@ -16,9 +16,9 @@ class TestGPX(TestCase):
         self.INSTANCE: int = 13
         x, y = fetch_data('210_cloud', return_X_y=True, local_cache_dir='./datasets')
         self.x_train, \
-            self.x_test, \
-            self.y_train, \
-            self.y_test = train_test_split(x, y, test_size=.3)
+        self.x_test, \
+        self.y_train, \
+        self.y_test = train_test_split(x, y, test_size=.3)
 
         self.reg: RandomForestRegressor = RandomForestRegressor()
         self.reg.fit(self.x_train, self.y_train)
@@ -56,5 +56,5 @@ class TestGPX(TestCase):
         exp = self.gpx.get_string_expression()
         print(exp)
 
-
-
+    def test_show_tree(self):
+        self.fail()

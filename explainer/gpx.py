@@ -1,9 +1,11 @@
+import graphviz
 
+from explain.show_explanation import TreeExplanation
+from translate.gp_adapter_factory import GPAdapterFactory
 from neighborhood.noise_set import NoiseSet
 
 import numpy as np
-
-from translate.gp_adapter_factory import GPAdapterFactory
+import sympy as sp
 
 
 class GPX:
@@ -26,10 +28,37 @@ class GPX:
         ns = NoiseSet(self.model_predict, info_data, self.noise_set_num_samples)
         return ns.noise_set(instance)
 
-    def instance_understanding(self, instance):
+    def instance_understanding(self, instance) -> None:
+        """
+
+        @param instance:
+        @return:
+        """
         x_around, y_around = self.noise_set_generated(instance)
         self.gp_model.fit(x_around, y_around)
 
-    def get_string_expression(self):
+    def get_string_expression(self) -> str:
         return self.gp_model.expression_string()
+
+    def show_tree(self,
+                  directory: str = None,
+                  filename: str = None,
+                  view: bool = True,
+                  cleanup: bool = False,
+                  ) -> graphviz.Source:
+
+        """
+
+        @param directory:
+        @param filename:
+        @param view:
+        @param cleanup:
+        @return:
+        """
+        sp_exp = sp.sympify(self.get_string_expression())
+        dot_sp = sp.dotprint(sp.N(sp_exp, 3))
+        te = TreeExplanation(dot_sp)
+        te.generate_image(view=view, filename=filename, directory=directory, cleanup=cleanup)
+
+        return te.graph_source
 
