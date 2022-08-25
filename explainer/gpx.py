@@ -1,6 +1,7 @@
 import graphviz
 
 from explain.show_explanation import TreeExplanation
+from translate.expression_translator import Translator
 from translate.gp_adapter_factory import GPAdapterFactory
 from neighborhood.noise_set import NoiseSet
 
@@ -55,7 +56,8 @@ class GPX:
         @param cleanup:
         @return:
         """
-        sp_exp = sp.sympify(self.get_string_expression())
+        sp_exp = Translator(gp_tool_name=self.gp_model.name, math_exp=self.get_string_expression())
+        # sp_exp = sp.sympify(self.get_string_expression())
         dot_sp = sp.dotprint(sp.N(sp_exp, 3))
         te = TreeExplanation(dot_sp)
         te.generate_image(view=view, filename=filename, directory=directory, cleanup=cleanup)
