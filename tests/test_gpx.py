@@ -57,4 +57,4 @@ class TestGPX(TestCase):
         print(exp)
 
     def test_show_tree(self):
-        self.fail()
+        self.gpx.show_tree()

@@ -5,16 +5,16 @@ class GPAdapterFactory:
 
     def __init__(self, gp_obj):
         self.obj = gp_obj
-        self.name = str(type(gp_obj))
+        self.tool_name = str(type(gp_obj))
 
     def get_gp_obj(self):
-        if self.name.find("operon") >= 0:
-            return Adapter(self.obj, expression_string=self.obj.get_model_string)
+        if self.tool_name.find("operon") >= 0:
+            return Adapter(self.obj, expression_string=self.obj.get_model_string, my_name="operon")
 
-        elif self.name.find("gplearn") >= 0:
-            return Adapter(self.obj, expression_string=lambda: self.obj._program)
+        elif self.tool_name.find("gplearn") >= 0:
+            return Adapter(self.obj, expression_string=lambda: self.obj._program, my_name="gplearn")
 
         else:
-            raise ValueError(f"{self.name} wasn't implemented")
+            raise ValueError(f"{self.tool_name} wasn't implemented")
 
 

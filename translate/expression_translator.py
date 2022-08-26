@@ -20,7 +20,7 @@ class Translator:
                 'pow': lambda x, y: x ** y,
                 'cos': lambda x: sp.cos(x)
             }
-            return sp.simplify(sp.sympify(self.math_exp, locals=changes))
+            return sp.simplify(sp.sympify(str(self.math_exp), locals=changes))
 
         if self.gp_tool_name.find("operon") >= 0:
-            return sp.simplify(sp.sympify(self.math_exp))
+            return sp.simplify(sp.sympify(str(self.math_exp)))

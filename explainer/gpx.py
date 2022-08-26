@@ -56,7 +56,7 @@ class GPX:
         @param cleanup:
         @return:
         """
-        sp_exp = Translator(gp_tool_name=self.gp_model.name, math_exp=self.get_string_expression())
+        sp_exp = Translator(gp_tool_name=self.gp_model.my_name, math_exp=self.get_string_expression()).get_translation()
         # sp_exp = sp.sympify(self.get_string_expression())
         dot_sp = sp.dotprint(sp.N(sp_exp, 3))
         te = TreeExplanation(dot_sp)
