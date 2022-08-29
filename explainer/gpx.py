@@ -38,6 +38,8 @@ class GPX:
         x_around, y_around = self.noise_set_generated(instance)
         self.gp_model.fit(x_around, y_around)
 
+        return x_around, y_around
+
     def get_string_expression(self) -> str:
         return self.gp_model.expression_string()
 
