@@ -1,25 +1,22 @@
 import graphviz
-
-from explain.show_explanation import TreeExplanation
-from translate.expression_translator import Translator
-from translate.gp_adapter_factory import GPAdapterFactory
-from neighborhood.noise_set import NoiseSet
-
 import numpy as np
 import sympy as sp
 
+from explain.show_explanation import TreeExplanation
+from neighborhood.noise_set import NoiseSet
+from translate.expression_translator import Translator
+from translate.gp_adapter_factory import GPAdapterFactory
 
-class GPX:
+
+class GPXClassification:
 
     def __init__(self,
                  x,
-                 y,
                  model_predict,
                  gp_model,
                  noise_set_num_samples=100
                  ):
         self.x = x
-        self.y = y
         self.model_predict = model_predict
         self.gp_model = GPAdapterFactory(gp_model).get_gp_obj()
         self.noise_set_num_samples = noise_set_num_samples
@@ -65,3 +62,6 @@ class GPX:
 
         return te.graph_source
 
+    def predict(self, x):
+        y_hat = self.gp_model.predict(x)
+        return (1 / (1+np.exp(-y_hat)) >= 0.5)*1
