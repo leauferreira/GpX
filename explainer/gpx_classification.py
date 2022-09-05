@@ -33,7 +33,8 @@ class GPXClassification:
         @return:
         """
         x_around, y_around = self.noise_set_generated(instance)
-        self.gp_model.fit(x_around, y_around[:, 1].reshape(-1) * 100)
+        yy = y_around[:, 1].reshape(-1) * 100
+        self.gp_model.fit(x_around, yy)
 
         return x_around, y_around
 
