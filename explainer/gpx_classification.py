@@ -33,8 +33,7 @@ class GPXClassification:
         @return:
         """
         x_around, y_around = self.noise_set_generated(instance)
-        yy = y_around[:, 1].reshape(-1) * 100
-        self.gp_model.fit(x_around, yy)
+        self.gp_model.fit(x_around, y_around[:, 1] * 100)
 
         return x_around, y_around
 
@@ -67,4 +66,4 @@ class GPXClassification:
         y_hat = self.gp_model.predict(x) / 100
 
         print('yhat: ', y_hat)
-        return (1 / (1+np.exp(-y_hat)) >= 0.5)*1
+        return ((1 / (1+np.exp(-y_hat))) >= 0.5)*1
