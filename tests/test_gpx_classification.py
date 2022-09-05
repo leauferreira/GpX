@@ -36,7 +36,7 @@ class TestGPXClassification(TestCase):
         my_gplearn.fit(x_varied, y_varied)
         gpx = GPXClassification(model_predict=my_predict, x=x_varied, gp_model=my_gplearn)
         gpx.instance_understanding(x_varied[3, :])
-        x, y = make_moons(15)
+        x, y = make_moons(50)
         y_hat = gpx.predict(x)
 
         print(y)
