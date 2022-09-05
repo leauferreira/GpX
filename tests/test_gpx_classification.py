@@ -13,10 +13,10 @@ class TestGPXClassification(TestCase):
 
     def test_predict(self):
 
-        x_varied, y_varied = make_moons(n_samples=1000, random_state=170)
+        x_varied, y_varied = make_moons(n_samples=1000)
         model = MLPClassifier()
         model.fit(x_varied, y_varied)
-        my_predict = model.predict
+        my_predict = model.predict_proba
 
         gp_hyper_parameters = {'population_size': 200,
                                'generations': 200,
@@ -41,6 +41,9 @@ class TestGPXClassification(TestCase):
 
         print(y)
         print(y_hat)
-        print(np.mean((y == y_hat)*1))
+        print(np.mean((y == y_hat)))
+
+        gpx.show_tree()
+
         self.assertGreaterEqual(np.mean((y == y_hat)*1), 0.5)
 
