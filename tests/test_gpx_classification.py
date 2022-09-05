@@ -18,31 +18,29 @@ class TestGPXClassification(TestCase):
         model.fit(x_varied, y_varied)
         my_predict = model.predict
 
-        gp_hyper_parameters = {'population_size': 100,
-                               'generations': 100,
-                               'stopping_criteria': 0.00001,
+        gp_hyper_parameters = {'population_size': 200,
+                               'generations': 200,
+                               'stopping_criteria': 0.0000001,
                                'p_crossover': 0.7,
                                'p_subtree_mutation': 0.1,
                                'p_hoist_mutation': 0.05,
                                'p_point_mutation': 0.1,
                                'const_range': (-1, 1),
                                'parsimony_coefficient': 0.01,
-                               'init_depth': (2, 3),
+                               # 'init_depth': (2, 3),
                                'n_jobs': -1,
                                'low_memory': True,
                                'function_set': ('add', 'sub', 'mul', 'div')}
 
         my_gplearn = SymbolicRegressor(**gp_hyper_parameters)
-
         my_gplearn.fit(x_varied, y_varied)
-
         gpx = GPXClassification(model_predict=my_predict, x=x_varied, gp_model=my_gplearn)
-
         gpx.instance_understanding(x_varied[3, :])
-
-        x, y = make_moons(50)
-
+        x, y = make_moons(15)
         y_hat = gpx.predict(x)
 
-        self.assertLessEqual(np.mean((y == y_hat)*1), 0.5)
+        print(y)
+        print(y_hat)
+        print(np.mean((y == y_hat)*1))
+        self.assertGreaterEqual(np.mean((y == y_hat)*1), 0.5)
 

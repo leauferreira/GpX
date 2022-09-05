@@ -22,7 +22,7 @@ class GPXClassification:
         self.noise_set_num_samples = noise_set_num_samples
 
     def noise_set_generated(self, instance):
-        info_data = np.std(self.x, axis=0) * .2
+        info_data = np.std(self.x, axis=0) * .4
         ns = NoiseSet(self.model_predict, info_data, self.noise_set_num_samples)
         return ns.noise_set(instance)
 
@@ -64,4 +64,6 @@ class GPXClassification:
 
     def predict(self, x):
         y_hat = self.gp_model.predict(x)
+
+        print('yhat: ', y_hat)
         return (1 / (1+np.exp(-y_hat)) >= 0.5)*1
