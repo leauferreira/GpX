@@ -34,7 +34,7 @@ class TestGPXClassification(TestCase):
 
         my_gplearn = SymbolicRegressor(**gp_hyper_parameters)
         my_gplearn.fit(x_varied, y_varied)
-        gpx = GPXClassification(model_predict=my_predict, x=x_varied, gp_model=my_gplearn)
+        gpx = GPXClassification(model_predict=my_predict, x=x_varied, gp_model=my_gplearn, noise_set_num_samples=300)
         gpx.instance_understanding(x_varied[3, :])
         x, y = make_moons(50)
         y_hat = gpx.predict(x)
