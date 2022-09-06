@@ -33,7 +33,7 @@ class GPXClassification:
         @return:
         """
         x_around, y_around = self.noise_set_generated(instance)
-        self.gp_model.fit(x_around, y_around[:, 1] * 1000)
+        self.gp_model.fit(x_around, y_around[:, 1] * 10)
 
         return x_around, y_around
 
@@ -63,7 +63,7 @@ class GPXClassification:
         return te.graph_source
 
     def predict(self, x):
-        y_hat = self.gp_model.predict(x) / 1000
+        y_hat = self.gp_model.predict(x) / 10
 
         print('yhat: ', y_hat)
         return ((1 / (1+np.exp(-y_hat))) >= 0.5)*1
