@@ -14,6 +14,11 @@ class GPAdapterFactory:
         elif self.tool_name.find("gplearn") >= 0:
             return Adapter(self.obj, expression_string=lambda: self.obj._program, my_name="gplearn")
 
+        elif self.tool_name.find("eckity") >= 0:
+            # expression_string = self.obj.algorithm.population.get_best_individuals()
+            return Adapter(self.obj, my_name="eckity")
+        elif self.tool_name.find("translate.adapter.Adapter") >= 0:
+            return self.obj
         else:
             raise ValueError(f"{self.tool_name} wasn't implemented")
 

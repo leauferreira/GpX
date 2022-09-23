@@ -18,7 +18,7 @@ class GPXClassification:
                  ):
         self.x = x
         self.model_predict = model_predict
-        self.gp_model = GPAdapterFactory(gp_model).get_gp_obj()
+        self.gp_model = gp_model
         self.noise_set_num_samples = noise_set_num_samples
 
     def noise_set_generated(self, instance):
@@ -34,6 +34,7 @@ class GPXClassification:
         """
         x_around, y_around = self.noise_set_generated(instance)
         self.gp_model.fit(x_around, y_around[:, 1] * 10)
+        self.gp_model = GPAdapterFactory(self.gp_model).get_gp_obj()
 
         return x_around, y_around
 

@@ -22,5 +22,12 @@ class Translator:
             }
             return sp.simplify(sp.sympify(str(self.math_exp), locals=changes))
 
-        if self.gp_tool_name.find("operon") >= 0:
+        elif self.gp_tool_name.find("operon") >= 0:
             return sp.simplify(sp.sympify(str(self.math_exp)))
+
+        elif self.gp_tool_name.find("eckity") >= 0:
+            # TODO
+            return "y - 3 + 5/x"
+
+        else:
+            raise ValueError(f"{self.tool_name} expression translator wasn't implemented")

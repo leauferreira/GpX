@@ -18,14 +18,15 @@ class GPX:
                  gp_model,
                  noise_set_num_samples=100
                  ):
+
         self.x = x
         self.y = y
         self.model_predict = model_predict
-        self.gp_model = GPAdapterFactory(gp_model).get_gp_obj()
+        self.gp_model = gp_model
         self.noise_set_num_samples = noise_set_num_samples
 
     def noise_set_generated(self, instance):
-        info_data = np.std(self.x, axis=0) * .2
+        info_data = np.std(self.x, axis=0) * 1
         ns = NoiseSet(self.model_predict, info_data, self.noise_set_num_samples)
         return ns.noise_set(instance)
 
@@ -37,6 +38,7 @@ class GPX:
         """
         x_around, y_around = self.noise_set_generated(instance)
         self.gp_model.fit(x_around, y_around)
+        self.gp_model = GPAdapterFactory(self.gp_model).get_gp_obj()
 
         return x_around, y_around
 
