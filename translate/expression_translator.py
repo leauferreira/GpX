@@ -31,3 +31,4 @@ class Translator:
 
         else:
             raise ValueError(f"{self.tool_name} expression translator wasn't implemented")
+

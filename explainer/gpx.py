@@ -1,6 +1,6 @@
 import graphviz
 
-from explain.show_explanation import TreeExplanation
+from explain.show_explanation import TreeExplanation, ExtractGradient
 from translate.expression_translator import Translator
 from translate.gp_adapter_factory import GPAdapterFactory
 from neighborhood.noise_set import NoiseSet
@@ -67,3 +67,8 @@ class GPX:
 
         return te.graph_source
 
+    def derivatives_generate(self, instance):
+        sp_exp = Translator(gp_tool_name=self.gp_model.my_name, math_exp=self.get_string_expression()).get_translation()
+        eg = ExtractGradient(sp_exp)
+        inst_dict = {'X' + str(i): value for i, value in enumerate(instance)}
+        return eg.partial_derivatives(inst_dict)

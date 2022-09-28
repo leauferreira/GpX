@@ -64,3 +64,8 @@ class TestGPX(TestCase):
         self.gpx.show_tree()
         exp = self.gpx.get_string_expression()
         self.assertEqual(exp, self.gpx.gp_model._program)
+
+    def test_derivatives_generate(self):
+        self.gpx.show_tree()
+        p = self.gpx.derivatives_generate(self.x_test[self.INSTANCE, :])
+        print(p)
