@@ -26,7 +26,7 @@ class GPX:
         self.noise_set_num_samples = noise_set_num_samples
 
     def noise_set_generated(self, instance):
-        info_data = np.std(self.x, axis=0) * 1
+        info_data = np.std(self.x, axis=0) * .25
         ns = NoiseSet(self.model_predict, info_data, self.noise_set_num_samples)
         return ns.noise_set(instance)
 
