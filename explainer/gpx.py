@@ -43,29 +43,30 @@ class GPX:
         return x_around, y_around
 
     def get_string_expression(self) -> str:
-        return self.gp_model.expression_string()
+        if self.gp_model.my_name == "operon":
+            return self.gp_model.expression_string(self.gp_model.obj.model_)
+        else:
+            return self.gp_model.expression_string()
 
     def show_tree(self,
                   directory: str = None,
                   filename: str = None,
                   view: bool = True,
                   cleanup: bool = False,
-                  ) -> graphviz.Source:
+                  is_base64: bool = False
+                  ):
 
-        """
-
-        @param directory:
-        @param filename:
-        @param view:
-        @param cleanup:
-        @return:
-        """
         sp_exp = Translator(gp_tool_name=self.gp_model.my_name, math_exp=self.get_string_expression()).get_translation()
         dot_sp = sp.dotprint(sp.N(sp_exp, 3))
         te = TreeExplanation(dot_sp)
-        te.generate_image(view=view, filename=filename, directory=directory, cleanup=cleanup)
+        if not is_base64:
+            te.generate_image(view=view, filename=filename, directory=directory, cleanup=cleanup)
+            return te.graph_source
+        else:
+            return te.generate_base64_image()
 
-        return te.graph_source
+
+
 
     def derivatives_generate(self, instance):
         sp_exp = Translator(gp_tool_name=self.gp_model.my_name, math_exp=self.get_string_expression()).get_translation()

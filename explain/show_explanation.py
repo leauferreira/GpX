@@ -1,3 +1,5 @@
+import base64
+
 import graphviz
 import sympy as sp
 
@@ -20,6 +22,10 @@ class TreeExplanation:
         @param cleanup:
         """
         self.graph_source.render(view=view, filename=filename, directory=directory, cleanup=cleanup)
+
+    def generate_base64_image(self):
+        graph_data = self.graph_source.pipe(format='png')
+        return base64.b64encode(graph_data).decode('utf-8')
 
 
 class ExtractGradient:
