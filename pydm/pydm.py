@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 
-
+# this class will be removed
 class DataManager:
 
     def __init__(self, builder):

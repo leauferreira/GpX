@@ -15,6 +15,7 @@ logging.basicConfig(filename=resource_path, level=logging.DEBUG,
                     filemode='w', format=fmt, datefmt='%d/%m/%Y %I:%M:%S %p')
 logging.getLogger(__name__)
 
+
 class Gpx:
     """
     Genetic Programming Explainer
