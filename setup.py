@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='GPX',
-    version='0.0.6',
+    version='0.0.6.18',
     packages=['gp_explainer', 'explainer', 'neighborhood', "translate", 'explain'],
     package_data={'pydm': ['data/*.csv']},
     url='https://github.com/leauferreira/GpX',
@@ -14,5 +14,6 @@ setup(
     install_requires=[
         'numpy >= 1.21.2',
         'pydotplus~=2.0.2',
+        'sympy~=1.12'
     ],
 )

@@ -1,5 +1,5 @@
 from unittest import TestCase
-
+import numpy as np
 import sympy as sp
 from sympy.vector import gradient
 from explain.show_explanation import TreeExplanation
@@ -57,7 +57,16 @@ class TestExtractGradient(TestCase):
         r = eg.partial_derivatives({'x': 1, 'y': 1, 'z': 1})
         print(r)
 
+    def test_numpy_partial_derivatives(self):
 
+        str_math_test = 'x*z + x**2 + sin(z) - x*y'
+        sp_exp = sp.sympify(str_math_test)
+
+        eg = ExtractGradient(sp_exp, ['x', 'y', 'z'])
+        arr = np.array([2, 1, 3])
+        r = eg.partial_derivatives(arr, as_numpy=True)
+
+        print(r)
 
 
 
