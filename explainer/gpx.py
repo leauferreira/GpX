@@ -28,6 +28,7 @@ class GPX:
         self.noise_set_num_samples = noise_set_num_samples
         self.info_data_rate = info_data_rate
         self.feature_names = feature_names
+        self.diff_dic = None
 
     @property
     def feature_names(self):
@@ -39,7 +40,6 @@ class GPX:
             self._feature_names = np.array([f'X{i+1}' for i in range(self.x.shape[1])])
         else:
             self._feature_names = feature_names
-
 
     def noise_set_generated(self, instance):
         info_data = np.std(self.x, axis=0) * self.info_data_rate
@@ -56,10 +56,10 @@ class GPX:
         x_train, x_test, y_train, y_test = train_test_split(x_around,
                                                             y_around,
                                                             train_size=0.7,
-                                                            test_size=0.3,
-                                                            shuffle=True)
+                                                            test_size=0.3)
         self.gp_model.fit(x_train, y_train)
         self.gp_model = GPAdapterFactory(self.gp_model).get_gp_obj()
+        self.diff_dic = self.calculate_differentials(as_numpy=True)
 
         return x_train, x_test, y_train, y_test
 
@@ -94,3 +94,24 @@ class GPX:
         else:
             inst_dict = {'X' + str(i+1): value for i, value in enumerate(instance)}
             return eg.partial_derivatives(inst_dict)
+
+    def calculate_differentials(self, as_numpy=False):
+        sp_exp = Translator(gp_tool_name=self.gp_model.my_name, math_exp=self.get_string_expression()).get_translation()
+        eg = ExtractGradient(sp_exp, self.feature_names)
+        if as_numpy:
+            return eg.numpy_derivatives()
+        else:
+            return eg.do_the_derivatives()
+
+    def apply_differentials(self, instance):
+        results = {}
+        if self.diff_dic is not None:
+            for k, v in self.diff_dic.items():
+                idx = v[1]
+                f = v[0]
+                results[k] = f(*instance[idx])
+        else:
+            raise ValueError(f'class {self.__class__.__name__} must use method '
+                             f'instance_understanding before to use apply_differentials')
+        return results
+

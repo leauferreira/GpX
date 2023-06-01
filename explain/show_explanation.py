@@ -53,7 +53,6 @@ class ExtractGradient:
         return results
 
     def partial_derivatives(self, instance, as_numpy=False):
-
         results = {}
         if as_numpy:
             partial = self.numpy_derivatives()
@@ -67,8 +66,6 @@ class ExtractGradient:
                 sym_f = f.free_symbols
                 replacements = [(str(a), instance[str(a)]) for a in sym_f]
                 results[s] = f.subs(replacements).evalf()
-
         return results
-
 
 

@@ -82,3 +82,14 @@ class TestNLS(TestCase):
         p = self.gpx.derivatives_generate(self.x_test[self.INSTANCE, :], as_numpy=True)
         self.gpx.show_tree()
         print(p)
+
+    def test_apply_differentials(self):
+        p = self.gpx.derivatives_generate(self.x_test[self.INSTANCE, :], as_numpy=True)
+        q = self.gpx.apply_differentials(self.x_test[self.INSTANCE, :])
+
+        for k, v in p.items():
+            assert q[k] == v
+
+
+
+
