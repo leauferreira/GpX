@@ -40,11 +40,14 @@ class TestNLS(TestCase):
         )
         self.my_operon.fit(x, y)
 
+        self.diff_as_numpy = False
+
         self.gpx = GPX(x=self.x_train,
                        y=self.y_train,
                        model_predict=self.reg.predict,
                        gp_model=self.my_operon,
-                       noise_set_num_samples=self.NUN_SAMPLES)
+                       noise_set_num_samples=self.NUN_SAMPLES,
+                       diff_as_numpy=self.diff_as_numpy)
 
         x, _, y, _ = self.gpx.instance_understanding(self.x_test[self.INSTANCE, :])
 
@@ -84,7 +87,8 @@ class TestNLS(TestCase):
         print(p)
 
     def test_apply_differentials(self):
-        p = self.gpx.derivatives_generate(self.x_test[self.INSTANCE, :], as_numpy=True)
+
+        p = self.gpx.derivatives_generate(self.x_test[self.INSTANCE, :], as_numpy=self.diff_as_numpy)
         q = self.gpx.apply_differentials(self.x_test[self.INSTANCE, :])
 
         for k, v in p.items():

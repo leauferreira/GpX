@@ -19,7 +19,8 @@ class GPX:
                  gp_model,
                  noise_set_num_samples=100,
                  info_data_rate=1,
-                 feature_names=None):
+                 feature_names=None,
+                 diff_as_numpy=True):
 
         self.x = x
         self.y = y
@@ -28,6 +29,7 @@ class GPX:
         self.noise_set_num_samples = noise_set_num_samples
         self.info_data_rate = info_data_rate
         self.feature_names = feature_names
+        self.diff_as_numpy = diff_as_numpy
         self.diff_dic = None
 
     @property
@@ -59,7 +61,7 @@ class GPX:
                                                             test_size=0.3)
         self.gp_model.fit(x_train, y_train)
         self.gp_model = GPAdapterFactory(self.gp_model).get_gp_obj()
-        self.diff_dic = self.calculate_differentials(as_numpy=True)
+        self.diff_dic = self.calculate_differentials(as_numpy=self.diff_as_numpy)
 
         return x_train, x_test, y_train, y_test
 
@@ -90,10 +92,10 @@ class GPX:
         sp_exp = Translator(gp_tool_name=self.gp_model.my_name, math_exp=self.get_string_expression()).get_translation()
         eg = ExtractGradient(sp_exp, self.feature_names)
         if as_numpy:
-            return eg.partial_derivatives(instance, as_numpy)
+            return eg.partial_derivatives(instance, as_numpy=as_numpy)
         else:
             inst_dict = {'X' + str(i+1): value for i, value in enumerate(instance)}
-            return eg.partial_derivatives(inst_dict)
+            return eg.partial_derivatives(inst_dict, as_numpy=as_numpy)
 
     def calculate_differentials(self, as_numpy=False):
         sp_exp = Translator(gp_tool_name=self.gp_model.my_name, math_exp=self.get_string_expression()).get_translation()
@@ -105,13 +107,24 @@ class GPX:
 
     def apply_differentials(self, instance):
         results = {}
-        if self.diff_dic is not None:
-            for k, v in self.diff_dic.items():
-                idx = v[1]
-                f = v[0]
-                results[k] = f(*instance[idx])
+        if self.diff_as_numpy:
+            if self.diff_dic is not None:
+                for k, v in self.diff_dic.items():
+                    idx = v[1]
+                    f = v[0]
+                    results[k] = f(*instance[idx])
+            else:
+                raise ValueError(f'class {self.__class__.__name__} must use method '
+                                 f'instance_understanding before to use apply_differentials')
         else:
-            raise ValueError(f'class {self.__class__.__name__} must use method '
-                             f'instance_understanding before to use apply_differentials')
+            if self.diff_dic is not None:
+                inst_dict = {'X' + str(i + 1): value for i, value in enumerate(instance)}
+                for s, f in self.diff_dic.items():
+                    sym_f = f.free_symbols
+                    replacements = [(str(a), inst_dict[str(a)]) for a in sym_f]
+                    results[s] = f.subs(replacements).evalf()
+            else:
+                raise ValueError(f'class {self.__class__.__name__} must use method '
+                                 f'instance_understanding before to use apply_differentials')
         return results
 
