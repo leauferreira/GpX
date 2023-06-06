@@ -14,6 +14,6 @@ setup(
     install_requires=[
         'numpy >= 1.21.2',
         'pydotplus~=2.0.2',
-        'sympy~=1.12'
+        'sympy >= 1.10'
     ],
 )
